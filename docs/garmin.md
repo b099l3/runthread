@@ -18,6 +18,31 @@ Real Garmin API access is not assumed to be available during early development. 
 8. Matched activities produce workout results.
 9. Workout results may trigger adaptation events.
 
+## Stage 4 Mock Import
+
+Stage 4 introduces a mock Garmin activity importer in `services/api/internal/garmin`.
+
+The mock importer accepts representative Garmin-shaped activity payloads with Garmin-specific fields such as:
+
+- Garmin activity ID
+- Garmin activity type
+- start time
+- duration
+- distance
+- average heart rate
+
+It normalises those payloads into the provider-neutral `domain.ImportedActivity` model.
+
+The current mock mapping supports:
+
+- Garmin road running labels to `run`
+- Garmin trail running labels to `trail_run`
+- Garmin treadmill labels to `treadmill`
+- Garmin walking labels to `walk`
+- unknown activity labels to `other`
+
+This stage does not include real Garmin OAuth, webhooks, polling, persistence, ConnectRPC endpoints, or raw payload storage.
+
 ## Boundary Rule
 
 Garmin-specific data must not leak into core domain logic.

@@ -1,0 +1,245 @@
+syntax = "proto3";
+
+package runthread.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/runthread/runthread/services/api/internal/rpc/runthread/v1;runthreadv1";
+
+service RunthreadService {
+  rpc GetCurrentPlanWeek(GetCurrentPlanWeekRequest) returns (GetCurrentPlanWeekResponse);
+  rpc CompleteImportedActivity(CompleteImportedActivityRequest) returns (CompleteImportedActivityResponse);
+}
+
+message GetCurrentPlanWeekRequest {
+  string athlete_id = 1;
+  string goal_id = 2;
+  string target_week_date = 3;
+  string plan_week_id = 4;
+}
+
+message GetCurrentPlanWeekResponse {
+  PlanWeek plan_week = 1;
+  repeated ImportedActivity imported_activities = 2;
+  repeated WorkoutMatch workout_matches = 3;
+  repeated WorkoutResult workout_results = 4;
+  repeated AdaptationEvent adaptation_events = 5;
+}
+
+message CompleteImportedActivityRequest {
+  AthleteProfile athlete_profile = 1;
+  TrainingGoal training_goal = 2;
+  string target_week_date = 3;
+  ImportedActivity imported_activity = 4;
+  string result_id = 5;
+  WorkoutOutcome outcome = 6;
+}
+
+message CompleteImportedActivityResponse {
+  PlanWeek plan_week = 1;
+  ImportedActivity imported_activity = 2;
+  WorkoutMatch workout_match = 3;
+  PlannedWorkout updated_workout = 4;
+  WorkoutResult workout_result = 5;
+  AdaptationEvent adaptation_event = 6;
+}
+
+message AthleteProfile {
+  string id = 1;
+  string display_name = 2;
+  ExperienceLevel experience_level = 3;
+  double current_weekly_distance_meters = 4;
+  repeated int32 preferred_run_days = 5;
+  repeated string constraints = 6;
+}
+
+message TrainingGoal {
+  string id = 1;
+  string athlete_id = 2;
+  GoalType type = 3;
+  string target_date = 4;
+  double target_distance_meters = 5;
+  int64 target_duration_seconds = 6;
+  string notes = 7;
+}
+
+message PlanWeek {
+  string id = 1;
+  string athlete_id = 2;
+  string goal_id = 3;
+  string plan_id = 4;
+  int32 week_index = 5;
+  string starts_on = 6;
+  WeekFocus focus = 7;
+  repeated PlannedWorkout workouts = 8;
+}
+
+message PlannedWorkout {
+  string id = 1;
+  string plan_id = 2;
+  string plan_week_id = 3;
+  string scheduled_for = 4;
+  WorkoutType type = 5;
+  PlannedWorkoutStatus status = 6;
+  double target_distance_meters = 7;
+  int64 target_duration_seconds = 8;
+  IntensityTarget intensity = 9;
+  string notes = 10;
+}
+
+message IntensityTarget {
+  string kind = 1;
+  string description = 2;
+}
+
+message ImportedActivity {
+  string id = 1;
+  string athlete_id = 2;
+  ActivityType type = 3;
+  google.protobuf.Timestamp started_at = 4;
+  int64 duration_seconds = 5;
+  double distance_meters = 6;
+  int64 average_pace_seconds_per_kilometer = 7;
+  int32 average_heart_bpm = 8;
+}
+
+message WorkoutMatch {
+  string id = 1;
+  string planned_workout_id = 2;
+  string imported_activity_id = 3;
+  WorkoutMatchStatus status = 4;
+  MatchConfidence confidence = 5;
+  MatchSource matched_by = 6;
+  google.protobuf.Timestamp matched_at = 7;
+  string notes = 8;
+}
+
+message WorkoutResult {
+  string id = 1;
+  string planned_workout_id = 2;
+  string imported_activity_id = 3;
+  WorkoutOutcome outcome = 4;
+  google.protobuf.Timestamp completed_at = 5;
+  double distance_meters = 6;
+  int64 duration_seconds = 7;
+  string notes = 8;
+}
+
+message AdaptationEvent {
+  string id = 1;
+  string plan_id = 2;
+  string athlete_id = 3;
+  AdaptationType type = 4;
+  string reason = 5;
+  string summary = 6;
+  google.protobuf.Timestamp created_at = 7;
+  repeated PlanChange changes = 8;
+}
+
+message PlanChange {
+  string planned_workout_id = 1;
+  PlanChangeType type = 2;
+  string description = 3;
+}
+
+enum ExperienceLevel {
+  EXPERIENCE_LEVEL_UNSPECIFIED = 0;
+  EXPERIENCE_LEVEL_BEGINNER = 1;
+  EXPERIENCE_LEVEL_INTERMEDIATE = 2;
+  EXPERIENCE_LEVEL_ADVANCED = 3;
+}
+
+enum GoalType {
+  GOAL_TYPE_UNSPECIFIED = 0;
+  GOAL_TYPE_GENERAL_FITNESS = 1;
+  GOAL_TYPE_RACE = 2;
+  GOAL_TYPE_DISTANCE = 3;
+  GOAL_TYPE_TIME = 4;
+}
+
+enum WeekFocus {
+  WEEK_FOCUS_UNSPECIFIED = 0;
+  WEEK_FOCUS_BASE = 1;
+  WEEK_FOCUS_BUILD = 2;
+  WEEK_FOCUS_RECOVERY = 3;
+  WEEK_FOCUS_PEAK = 4;
+  WEEK_FOCUS_TAPER = 5;
+}
+
+enum WorkoutType {
+  WORKOUT_TYPE_UNSPECIFIED = 0;
+  WORKOUT_TYPE_EASY = 1;
+  WORKOUT_TYPE_LONG_RUN = 2;
+  WORKOUT_TYPE_WORKOUT = 3;
+  WORKOUT_TYPE_RECOVERY = 4;
+  WORKOUT_TYPE_RACE = 5;
+  WORKOUT_TYPE_REST = 6;
+  WORKOUT_TYPE_STRENGTH = 7;
+}
+
+enum PlannedWorkoutStatus {
+  PLANNED_WORKOUT_STATUS_UNSPECIFIED = 0;
+  PLANNED_WORKOUT_STATUS_SCHEDULED = 1;
+  PLANNED_WORKOUT_STATUS_COMPLETED = 2;
+  PLANNED_WORKOUT_STATUS_MISSED = 3;
+  PLANNED_WORKOUT_STATUS_SKIPPED = 4;
+  PLANNED_WORKOUT_STATUS_MOVED = 5;
+}
+
+enum ActivityType {
+  ACTIVITY_TYPE_UNSPECIFIED = 0;
+  ACTIVITY_TYPE_RUN = 1;
+  ACTIVITY_TYPE_TRAIL_RUN = 2;
+  ACTIVITY_TYPE_TREADMILL = 3;
+  ACTIVITY_TYPE_WALK = 4;
+  ACTIVITY_TYPE_OTHER = 5;
+}
+
+enum WorkoutMatchStatus {
+  WORKOUT_MATCH_STATUS_UNSPECIFIED = 0;
+  WORKOUT_MATCH_STATUS_MATCHED = 1;
+  WORKOUT_MATCH_STATUS_UNCERTAIN = 2;
+  WORKOUT_MATCH_STATUS_REJECTED = 3;
+}
+
+enum MatchConfidence {
+  MATCH_CONFIDENCE_UNSPECIFIED = 0;
+  MATCH_CONFIDENCE_HIGH = 1;
+  MATCH_CONFIDENCE_MEDIUM = 2;
+  MATCH_CONFIDENCE_LOW = 3;
+}
+
+enum MatchSource {
+  MATCH_SOURCE_UNSPECIFIED = 0;
+  MATCH_SOURCE_AUTOMATIC = 1;
+  MATCH_SOURCE_MANUAL = 2;
+}
+
+enum WorkoutOutcome {
+  WORKOUT_OUTCOME_UNSPECIFIED = 0;
+  WORKOUT_OUTCOME_COMPLETED_AS_PLANNED = 1;
+  WORKOUT_OUTCOME_PARTIALLY_COMPLETED = 2;
+  WORKOUT_OUTCOME_MISSED = 3;
+  WORKOUT_OUTCOME_SKIPPED = 4;
+  WORKOUT_OUTCOME_MOVED = 5;
+  WORKOUT_OUTCOME_OVERPERFORMED = 6;
+  WORKOUT_OUTCOME_UNDERPERFORMED = 7;
+}
+
+enum AdaptationType {
+  ADAPTATION_TYPE_UNSPECIFIED = 0;
+  ADAPTATION_TYPE_MISSED_WORKOUT = 1;
+  ADAPTATION_TYPE_PARTIAL_COMPLETION = 2;
+  ADAPTATION_TYPE_OVERPERFORMANCE = 3;
+  ADAPTATION_TYPE_UNDERPERFORMANCE = 4;
+  ADAPTATION_TYPE_SCHEDULE_CHANGE = 5;
+}
+
+enum PlanChangeType {
+  PLAN_CHANGE_TYPE_UNSPECIFIED = 0;
+  PLAN_CHANGE_TYPE_WORKOUT_MOVED = 1;
+  PLAN_CHANGE_TYPE_WORKOUT_REMOVED = 2;
+  PLAN_CHANGE_TYPE_WORKOUT_ADDED = 3;
+  PLAN_CHANGE_TYPE_WORKOUT_ADJUSTED = 4;
+  PLAN_CHANGE_TYPE_PLAN_NOTE_ADDED = 5;
+}

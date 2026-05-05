@@ -46,7 +46,29 @@ The Flutter app talks to the Go backend through ConnectRPC. It should not duplic
 
 The Go backend owns the domain model, planning rules, workout matching, adaptation rules, and integration workflows.
 
-Postgres stores app data, including athletes, goals, plans, planned workouts, imported activities, workout matches, workout results, provider connections, and adaptation events.
+The initial API contract lives in `services/api/proto/runthread/v1/runthread.proto`. It defines a provider-neutral `RunthreadService` with `CompleteImportedActivity` for the current backend core-loop application service boundary and `GetCurrentPlanWeek` as the first read-side contract for the Flutter MVP. Buf generation config lives in `services/api/buf.yaml` and `services/api/buf.gen.yaml`, and generated Go protobuf/ConnectRPC code lives under `services/api/internal/rpc`.
+
+`services/api/internal/rpc/handler` contains the first thin ConnectRPC handler. It maps protobuf messages to domain/app types explicitly, calls application services, and maps responses back to protobuf. It does not own training decisions, persistence selection, auth, or provider-specific logic.
+
+The current `CompleteImportedActivity` request is deliberately wider than the eventual production API. It accepts `AthleteProfile`, `TrainingGoal`, and `ImportedActivity` payloads so the first end-to-end RPC can exercise the core loop before auth, read models, and real provider import exist. Near term, this should narrow: athlete identity should come from auth/session context, goals and planned workouts should be loaded from repositories, and imported activities should usually be referenced by ID after provider import rather than supplied inline by the client. Keeping the temporary shape explicit prevents the Flutter app from treating this demo-oriented request as the long-term contract.
+
+The current `GetCurrentPlanWeek` request is also transitional. It accepts request-supplied `plan_week_id`, `athlete_id`, optional `goal_id`, and `target_week_date` so the Flutter MVP has a small provider-neutral read shape before auth and current-plan lookup exist. The response groups the current plan week with related imported activities, matches, workout results, and adaptation events that the first MVP screens are expected to render.
+
+Application service boundaries sit between future RPC handlers and the domain packages. These services should expose use-case shaped methods and keep handlers thin. The first boundary is `services/api/internal/app/CoreLoopService`, which wraps the test-only core-loop harness and persists successful outputs through repository interfaces without adding ConnectRPC.
+
+`services/api/internal/app.NewServices` is the application composition layer. It builds backend application services from a selected `repository.Store`, starting with `CoreLoopService` and `CurrentPlanWeekService`. HTTP and ConnectRPC handlers should depend on this composed service set rather than constructing domain services or repositories directly.
+
+Repository interfaces define the persistence boundary. The initial in-memory store lives in `services/api/internal/repository` and is intended for tests and early service wiring. sqlc-backed repositories live in `services/api/internal/postgres` and now cover the current core repository interfaces. `postgres.Store` composes those repositories behind `repository.Store` from a `*sql.DB`.
+
+`CoreLoopService` persists successful in-memory core-loop outputs through repository interfaces, including both the saved `PlanWeek` and each `PlannedWorkout` as a first-class record. This keeps future RPC handlers focused on transport concerns and keeps the eventual Postgres/sqlc implementation behind the same boundary.
+
+`CurrentPlanWeekService` reads current plan-week state through repository interfaces. With the in-memory store, it can return a saved week and nearby completion state, or generate and save a deterministic demo week from stored athlete and goal records when no saved week exists. The Postgres-backed current-plan read query remains deferred until live database integration tests exist.
+
+Server startup reads configuration from the environment through `services/api/internal/config`. `RUNTHREAD_SERVER_ADDR` controls the HTTP bind address and defaults to `:8080`. `services/api/internal/startup` composes storage: it uses `repository.NewInMemoryStore()` when `DATABASE_URL` is empty, and opens a Postgres `database/sql` handle for `postgres.NewStore(db)` when `DATABASE_URL` is set. The server constructs application services from the selected store, exposes `/healthz`, and mounts the first ConnectRPC handler.
+
+Postgres will store app data, including athletes, goals, plans, planned workouts, imported activities, workout matches, workout results, provider connections, and adaptation events.
+
+The initial Postgres persistence model is planned in `docs/persistence.md`. Plain SQL migrations exist under `services/api/internal/postgres/migrations`, and `scripts/db` contains minimal local up/down wrappers. sqlc config, query files, and generated database code exist for the current core tables. sqlc-backed repositories and a Postgres store composition layer exist for athlete profiles, training goals, plan weeks, planned workouts, imported activities, workout matches, workout results, and adaptation events. Versioned migration tooling, live database integration tests, auth, and additional implemented ConnectRPC methods remain deferred.
 
 sqlc will generate typed Go data access code from SQL queries when the persistence layer is introduced.
 
@@ -54,3 +76,17 @@ Garmin integration imports activities and normalises them into Runthread's `Impo
 
 AI can be used to draft explanations or copy. It must not decide workouts, plan changes, training load, or adaptation rules.
 
+## Future RPC Candidates
+
+The first ConnectRPC services should be thin wrappers around application services, not domain packages directly.
+
+Likely early RPC methods:
+
+- Complete an imported activity through the core loop. This is the first proto contract.
+- Fetch the current plan week and nearby activity/completion/adaptation state. This is the first read-side proto contract.
+- Generate a plan week from an athlete profile, goal, and target week date if a separate planning action is needed.
+- Mark a planned workout missed, skipped, moved, or manually completed.
+- Match an imported activity to a planned workout.
+- Fetch adaptation events and user-facing explanation data once persistence exists.
+
+Database persistence, auth, provider connections, and real Garmin import should be added before these become production API endpoints.
