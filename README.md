@@ -32,8 +32,18 @@ The backend currently exposes only a health endpoint.
 
 Prerequisites:
 
-- Go 1.22 or newer.
+- `asdf`.
+- Go `1.25.5` installed through `asdf`.
 - Docker Compose for local Postgres.
+
+Tool versions are pinned in `.tool-versions`.
+
+```sh
+asdf install
+asdf current
+```
+
+Only Go is pinned today. Flutter will be pinned when the mobile app is scaffolded.
 
 ```sh
 cd services/api

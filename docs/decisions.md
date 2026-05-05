@@ -43,3 +43,15 @@ Decision: Garmin is the first provider integration. Coros and Apple Watch are de
 Reason: Focusing on one provider reduces integration complexity and matches the initial target user. The domain should still remain provider-neutral.
 
 Note: Real Garmin access is assumed to require validation or application before production integration work begins.
+
+## ADR-0006: Use asdf for Tool Versions
+
+Status: Accepted
+
+Decision: Runthread will pin local development tool versions with repo-level `.tool-versions`.
+
+Reason: Future sessions and local development should use the same toolchain without relying on machine-global defaults.
+
+Initial pinned tool:
+
+- Go `1.25.5`

@@ -3,6 +3,7 @@
 Future Codex sessions should work this way:
 
 - Read `README.md` and the relevant files in `docs/` before coding.
+- Use the repo `.tool-versions` through `asdf` before running language tooling.
 - Make a short plan before changing code.
 - Keep changes small and tied to the current stage.
 - Update docs when decisions, domain concepts, or architecture change.
