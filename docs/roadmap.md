@@ -556,12 +556,47 @@ Notes:
 
 ## Stage 7: Flutter MVP Screens
 
+Status: Completed MVP shell pass.
+
 Acceptance criteria:
 
 - Flutter app can show the current plan, workout details, imported activity status, and adaptation explanations.
 - App talks to backend via ConnectRPC.
 - UI supports the core loop without provider setup complexity.
 - Basic loading and error states exist.
+
+Notes:
+
+- Flutter is scaffolded under `apps/mobile` and pinned through asdf.
+- The first screen renders a seven-day weekly plan with workout details, loading state, and error state.
+- Tapping a planned workout opens a detail view with scheduled date, type, status, target distance, target duration, intensity, and notes.
+- Imported activity, match, and workout result data from `GetCurrentPlanWeek` are parsed by the mobile client and shown as completion state when present.
+- Workouts without imported activity data show an empty imported-activity state.
+- Adaptation events from `GetCurrentPlanWeek` are parsed by the mobile client and shown in a calm weekly plan summary, with an empty state when no adaptations exist.
+- A lightweight bottom navigation now keeps the weekly plan as the default tab and adds a history tab.
+- The history tab reuses `GetCurrentPlanWeek` data to show recent imported activity and adaptation history without adding backend endpoints.
+- Workout detail includes a disabled completion affordance that explains completion will come from imported Garmin activity later; the Flutter app does not call the demo-shaped completion RPC.
+- `lib/src/api/runthread_api.dart` isolates the backend API boundary.
+- Dart protobuf/ConnectRPC generation remains deferred; the first mobile client uses Connect's JSON protocol directly.
+- The app currently assumes local backend `http://localhost:8080` and sends demo `athlete-1` / `goal-1` identifiers.
+- `lib/src/demo` provides a local demo fallback when the backend is unavailable or unseeded, and the plan and history tabs show a demo-data notice.
+- Widget tests cover the weekly plan, loading/error states, demo fallback notice, workout detail navigation, disabled completion affordance, imported activity completion state, adaptation summary state, and history navigation states.
+- Garmin connection screens, auth, subscriptions, and AI explanations remain deferred.
+
+Readiness cleanup notes:
+
+- The Stage 7 mobile surface is ready as an MVP shell for plan viewing, workout detail review, activity/adaptation read state, and demo fallback.
+- It is not beta-ready yet because athlete identity, current-plan lookup, and fallback data are demo-shaped.
+- The Flutter client still uses hand-written Connect JSON instead of generated Dart protobuf/ConnectRPC code.
+- Mobile completion remains read-only; real completion should come from imported Garmin activities matched by the backend.
+- Postgres-backed current-plan reads, auth, provider connection, and production refresh behavior remain deferred.
+
+Stage 7 handoff:
+
+- Acceptance criteria are met for the current MVP shell: the app shows the current plan, workout details, imported activity status when present, adaptation summaries, loading state, error state, and demo fallback.
+- The weekly plan remains the default tab; history is a read-only second tab backed by the same `GetCurrentPlanWeek` response.
+- The app does not call `CompleteImportedActivity` because that RPC still accepts request-supplied athlete, goal, and activity payloads for backend-loop testing.
+- Remaining Stage 7 gaps are intentionally deferred: generated Dart RPC bindings, auth-backed current athlete lookup, persisted current-plan reads, live imported activity data, and production write flows.
 
 ## Stage 8: Real Garmin Integration
 
@@ -572,6 +607,15 @@ Acceptance criteria:
 - Activities import into the backend.
 - Imported activities are normalised and matched to planned workouts.
 - Integration failures are logged and recoverable.
+
+Prerequisites before implementation:
+
+- Validate Garmin access path first: confirm whether developer approval, production access, test accounts, webhooks, polling, rate limits, and data scopes are available for Runthread.
+- Define provider connection persistence before OAuth work: store athlete-owned provider connection records separately from core domain tables, including provider name, external athlete/user ID, token metadata if allowed, sync status, and last import cursor/timestamp.
+- Keep Garmin payloads inside the Garmin integration package. Normalise imported runs into provider-neutral `ImportedActivity` records before matching or adaptation logic sees them.
+- Decide the import trigger shape before adding endpoints: provider callback/webhook, scheduled sync, manual refresh, or a local mock sync command. The first implementation can use mock or sandbox data while preserving the production boundary.
+- Define mobile UX entry points without building them yet: an unobtrusive connection status surface, a connect Garmin action, an import/sync state, and recovery text for delayed or failed imports.
+- Preserve the core loop contract: Garmin import creates activities, matching links activities to planned workouts, workout results drive adaptation, and the Flutter app reads the resulting state through `GetCurrentPlanWeek`.
 
 ## Stage 9: Subscriptions and Beta Launch
 

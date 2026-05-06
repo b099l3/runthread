@@ -44,6 +44,8 @@ The backend owns domain logic. The mobile app presents the plan, workout state, 
 
 The Flutter app talks to the Go backend through ConnectRPC. It should not duplicate training decisions locally.
 
+The initial Flutter MVP lives in `apps/mobile`. It starts on the weekly plan view, calls `GetCurrentPlanWeek`, and keeps transport code isolated behind `lib/src/api/runthread_api.dart`. Dart protobuf/ConnectRPC generation is deferred, so the first mobile client uses Connect's JSON protocol directly as a temporary boundary.
+
 The Go backend owns the domain model, planning rules, workout matching, adaptation rules, and integration workflows.
 
 The initial API contract lives in `services/api/proto/runthread/v1/runthread.proto`. It defines a provider-neutral `RunthreadService` with `CompleteImportedActivity` for the current backend core-loop application service boundary and `GetCurrentPlanWeek` as the first read-side contract for the Flutter MVP. Buf generation config lives in `services/api/buf.yaml` and `services/api/buf.gen.yaml`, and generated Go protobuf/ConnectRPC code lives under `services/api/internal/rpc`.
@@ -53,6 +55,8 @@ The initial API contract lives in `services/api/proto/runthread/v1/runthread.pro
 The current `CompleteImportedActivity` request is deliberately wider than the eventual production API. It accepts `AthleteProfile`, `TrainingGoal`, and `ImportedActivity` payloads so the first end-to-end RPC can exercise the core loop before auth, read models, and real provider import exist. Near term, this should narrow: athlete identity should come from auth/session context, goals and planned workouts should be loaded from repositories, and imported activities should usually be referenced by ID after provider import rather than supplied inline by the client. Keeping the temporary shape explicit prevents the Flutter app from treating this demo-oriented request as the long-term contract.
 
 The current `GetCurrentPlanWeek` request is also transitional. It accepts request-supplied `plan_week_id`, `athlete_id`, optional `goal_id`, and `target_week_date` so the Flutter MVP has a small provider-neutral read shape before auth and current-plan lookup exist. The response groups the current plan week with related imported activities, matches, workout results, and adaptation events that the first MVP screens are expected to render.
+
+The mobile app currently sends demo `athlete-1` and `goal-1` identifiers to the local backend. If those records are missing or the backend is unavailable, the app falls back to local demo plan data from `lib/src/demo` and shows a visible demo-data notice. Onboarding, auth-backed athlete selection, and seeded beta data remain future work.
 
 Application service boundaries sit between future RPC handlers and the domain packages. These services should expose use-case shaped methods and keep handlers thin. The first boundary is `services/api/internal/app/CoreLoopService`, which wraps the test-only core-loop harness and persists successful outputs through repository interfaces without adding ConnectRPC.
 

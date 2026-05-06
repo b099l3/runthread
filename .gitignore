@@ -26,9 +26,9 @@ go.work
 .packages
 build/
 pubspec.lock
+!apps/mobile/pubspec.lock
 
 # Generated
 *.log
 tmp/
 coverage/
-

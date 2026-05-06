@@ -18,7 +18,7 @@ The product should become a real business, so the repo is structured for a Flutt
 ```text
 runthread/
   apps/
-    mobile/          Flutter mobile app, to be scaffolded later
+    mobile/          Flutter mobile MVP app
   services/
     api/             Go backend service
   docs/              Product, architecture, domain, roadmap, decisions
@@ -36,6 +36,7 @@ Prerequisites:
 - Go `1.25.5` installed through `asdf`.
 - sqlc `1.31.1` installed through `asdf`.
 - buf `1.69.0` installed through `asdf`.
+- Flutter `3.41.6-stable` installed through `asdf`.
 - Docker Compose for local Postgres.
 
 Tool versions are pinned in `.tool-versions`.
@@ -45,7 +46,7 @@ asdf install
 asdf current
 ```
 
-Go, sqlc, and buf are pinned today. Flutter will be pinned when the mobile app is scaffolded.
+Go, sqlc, buf, and Flutter are pinned today.
 
 ```sh
 cd services/api
@@ -128,14 +129,29 @@ cd services/api
 asdf exec go test ./...
 ```
 
-Flutter has not been scaffolded yet. The mobile app directory exists as a placeholder until the MVP screens stage.
+Run the Flutter MVP app:
+
+```sh
+cd apps/mobile
+asdf exec flutter run
+```
+
+Run mobile checks:
+
+```sh
+cd apps/mobile
+asdf exec flutter analyze
+asdf exec flutter test
+```
+
+The mobile app defaults to `http://localhost:8080` and currently uses Connect's JSON protocol from a small API client boundary until Dart protobuf/ConnectRPC generation is added. It shows the weekly plan by default, includes workout detail and history views, and keeps completion read-only until real imported activity flow exists. If the local backend is unavailable or unseeded, the app falls back to local demo plan data and shows a visible demo-data notice.
 
 ## Current Status
 
 Backend foundation through Stage 6 is in place, plus an in-memory core-loop test harness.
 
-This repo currently contains documentation, a minimal Go API skeleton, local Postgres infrastructure, provider-neutral domain models, deterministic planning, workout flow helpers, mock Garmin activity normalisation, activity matching, adaptation event generation, in-memory repository boundaries, app-service persistence wiring for plan weeks and first-class planned workouts, application service composition, server configuration and startup storage composition, an initial provider-neutral protobuf API contract, buf generation config, generated protobuf/ConnectRPC Go code, the first thin ConnectRPC handler, an implemented in-memory read-side RPC for the Flutter MVP, plain SQL schema migrations, local migration scripts, generated sqlc code for the core tables, sqlc-backed repositories and a Postgres store composition layer for the current core repository interfaces, and end-to-end backend core-loop tests.
+This repo currently contains documentation, a minimal Go API skeleton, local Postgres infrastructure, provider-neutral domain models, deterministic planning, workout flow helpers, mock Garmin activity normalisation, activity matching, adaptation event generation, in-memory repository boundaries, app-service persistence wiring for plan weeks and first-class planned workouts, application service composition, server configuration and startup storage composition, an initial provider-neutral protobuf API contract, buf generation config, generated protobuf/ConnectRPC Go code, the first thin ConnectRPC handler, an implemented in-memory read-side RPC for the Flutter MVP, a scaffolded Flutter app with weekly plan, workout detail, history, demo fallback, and read-only completion affordance screens, plain SQL schema migrations, local migration scripts, generated sqlc code for the core tables, sqlc-backed repositories and a Postgres store composition layer for the current core repository interfaces, and end-to-end backend core-loop tests.
 
-It does not yet contain versioned migration tooling, live database integration tests, auth, Postgres-backed read-side query implementations, Flutter screens, real Garmin OAuth, subscriptions, or AI explanation generation.
+It does not yet contain versioned migration tooling, live database integration tests, auth, Postgres-backed read-side query implementations, Dart protobuf/ConnectRPC generation, real Garmin OAuth, production completion writes from mobile, subscriptions, or AI explanation generation.
 
 Real Garmin API access is assumed to require validation or application before Stage 8.
