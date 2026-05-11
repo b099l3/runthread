@@ -701,6 +701,8 @@ Notes:
 
 ## Stage 13: Activity Matching to Planned Workouts
 
+Status: Completed provider-neutral matching pass.
+
 Acceptance criteria:
 
 - Imported activities from Strava use the same matching flow as existing provider-neutral imports.
@@ -708,6 +710,14 @@ Acceptance criteria:
 - Confident, uncertain, rejected, and manual match paths remain represented in `WorkoutMatch`.
 - Flutter reads match state through provider-neutral plan/read APIs.
 - Provider-specific matching rules are avoided unless first mapped to provider-neutral signals.
+
+Notes:
+
+- `services/api/internal/app.ProviderActivityMatchService` matches already-imported provider activities to planned workouts using `domain.ImportedActivity` and the existing `matching.Matcher`.
+- The service persists `WorkoutMatch` records for confident, uncertain, rejected, and manual matches so manual review can build on stored match state later.
+- A Strava package test proves a mock Strava backfill import can be matched to a planned workout through the provider-neutral app service.
+- No Strava-specific matching rules were added; Strava payload fields remain inside `services/api/internal/providers/strava`.
+- There are still no Flutter UI changes, real Strava API calls, or AI integration.
 
 ## Stage 14: Adaptation from Imported Activities
 
