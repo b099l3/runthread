@@ -721,6 +721,8 @@ Notes:
 
 ## Stage 14: Adaptation from Imported Activities
 
+Status: Completed provider-neutral result/adaptation pass.
+
 Acceptance criteria:
 
 - Matched imported activities produce `WorkoutResult` records.
@@ -728,6 +730,15 @@ Acceptance criteria:
 - Adaptation events explain what changed and why without relying on provider-specific payloads.
 - Strava-derived activity data is not sent to AI prompts or used for AI model training.
 - End-to-end tests cover import, match, result, and adaptation using mocked provider data.
+
+Notes:
+
+- `services/api/internal/app.ProviderActivityCompletionService` consumes matched provider-neutral activities and creates `WorkoutResult` records through existing workout completion helpers.
+- The service runs the deterministic adaptation engine for outcomes that require adaptation and persists workout results, updated workouts/weeks, and adaptation events.
+- Uncertain and rejected matches do not create workout results; they remain available for later manual review.
+- A Strava package test proves mock Strava backfill import, provider-neutral matching, workout result creation, and deterministic adaptation work together without Strava-specific adaptation rules.
+- Strava-derived activity data is still not sent to AI prompts or used for model training.
+- There are still no Flutter UI changes, real Strava API calls, or AI integration.
 
 ## Stage 15: Garmin Direct Integration
 
