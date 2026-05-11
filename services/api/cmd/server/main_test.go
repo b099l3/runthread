@@ -132,6 +132,58 @@ func TestGetCurrentPlanWeekConnectEndpoint(t *testing.T) {
 	}
 }
 
+func TestProviderConnectionConnectEndpoints(t *testing.T) {
+	server := httptest.NewServer(newMux(testServices(t)))
+	defer server.Close()
+
+	ctx := context.Background()
+	client := runthreadv1connect.NewRunthreadServiceClient(server.Client(), server.URL)
+	startResponse, err := client.StartProviderConnection(ctx, connect.NewRequest(&rpcv1.StartProviderConnectionRequest{
+		AthleteId:   "athlete-1",
+		Provider:    rpcv1.Provider_PROVIDER_GARMIN,
+		RedirectUri: "runthread://provider/garmin/callback",
+	}))
+	if err != nil {
+		t.Fatalf("StartProviderConnection returned error: %v", err)
+	}
+
+	startMsg := startResponse.Msg
+	if startMsg.GetConnection().GetAthleteId() != "athlete-1" {
+		t.Fatalf("connection athlete ID = %q, want athlete-1", startMsg.GetConnection().GetAthleteId())
+	}
+	if startMsg.GetConnection().GetProvider() != rpcv1.Provider_PROVIDER_GARMIN {
+		t.Fatalf("connection provider = %s, want garmin", startMsg.GetConnection().GetProvider())
+	}
+	if startMsg.GetConnection().GetStatus() != rpcv1.ProviderConnectionStatus_PROVIDER_CONNECTION_STATUS_PENDING {
+		t.Fatalf("connection status = %s, want pending", startMsg.GetConnection().GetStatus())
+	}
+	if startMsg.GetOauthReady() {
+		t.Fatal("oauth_ready = true, want false")
+	}
+	if startMsg.GetAuthorizationUrl() != "" {
+		t.Fatalf("authorization_url = %q, want empty placeholder", startMsg.GetAuthorizationUrl())
+	}
+
+	statusResponse, err := client.GetProviderConnectionStatus(ctx, connect.NewRequest(&rpcv1.GetProviderConnectionStatusRequest{
+		AthleteId: "athlete-1",
+		Provider:  rpcv1.Provider_PROVIDER_GARMIN,
+	}))
+	if err != nil {
+		t.Fatalf("GetProviderConnectionStatus returned error: %v", err)
+	}
+
+	statusMsg := statusResponse.Msg
+	if !statusMsg.GetHasConnection() {
+		t.Fatal("has_connection = false, want true")
+	}
+	if statusMsg.GetConnection().GetId() != startMsg.GetConnection().GetId() {
+		t.Fatalf("status connection ID = %q, want started connection %q", statusMsg.GetConnection().GetId(), startMsg.GetConnection().GetId())
+	}
+	if statusMsg.GetConnection().GetStatus() != rpcv1.ProviderConnectionStatus_PROVIDER_CONNECTION_STATUS_PENDING {
+		t.Fatalf("status connection status = %s, want pending", statusMsg.GetConnection().GetStatus())
+	}
+}
+
 const dateLayout = "2006-01-02"
 
 func testServices(t *testing.T) app.Services {

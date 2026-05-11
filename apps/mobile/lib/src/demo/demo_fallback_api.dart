@@ -1,18 +1,32 @@
 import '../api/runthread_api.dart';
 import '../models/plan_week.dart';
+import '../models/provider_connection.dart';
 import 'demo_plan_week.dart';
 
 class DemoFallbackRunthreadApi implements RunthreadApi {
   const DemoFallbackRunthreadApi({required this.primary});
 
   final RunthreadApi primary;
+  static Object? lastFallbackError;
 
   @override
   Future<CurrentPlanWeek> getCurrentPlanWeek() async {
     try {
-      return await primary.getCurrentPlanWeek();
-    } catch (_) {
+      final response = await primary.getCurrentPlanWeek();
+      lastFallbackError = null;
+      return response;
+    } catch (error) {
+      lastFallbackError = error;
       return demoCurrentPlanWeek();
+    }
+  }
+
+  @override
+  Future<ProviderConnectionStatusView> getProviderConnectionStatus() async {
+    try {
+      return await primary.getProviderConnectionStatus();
+    } catch (_) {
+      return ProviderConnectionStatusView.notConnected(statusUnavailable: true);
     }
   }
 }

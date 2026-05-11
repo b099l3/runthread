@@ -1,6 +1,7 @@
 package startup
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -26,8 +27,12 @@ type Storage struct {
 
 func ComposeStorage(cfg config.Config) (Storage, error) {
 	if !cfg.DatabaseConfigured() {
+		store := repository.NewInMemoryStore()
+		if err := SeedDemoData(context.Background(), store); err != nil {
+			return Storage{}, fmt.Errorf("seed demo data: %w", err)
+		}
 		return Storage{
-			Store:   repository.NewInMemoryStore(),
+			Store:   store,
 			Kind:    StorageKindInMemory,
 			Cleanup: func() error { return nil },
 		}, nil

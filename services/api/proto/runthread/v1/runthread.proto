@@ -8,6 +8,8 @@ option go_package = "github.com/runthread/runthread/services/api/internal/rpc/ru
 
 service RunthreadService {
   rpc GetCurrentPlanWeek(GetCurrentPlanWeekRequest) returns (GetCurrentPlanWeekResponse);
+  rpc GetProviderConnectionStatus(GetProviderConnectionStatusRequest) returns (GetProviderConnectionStatusResponse);
+  rpc StartProviderConnection(StartProviderConnectionRequest) returns (StartProviderConnectionResponse);
   rpc CompleteImportedActivity(CompleteImportedActivityRequest) returns (CompleteImportedActivityResponse);
 }
 
@@ -42,6 +44,42 @@ message CompleteImportedActivityResponse {
   PlannedWorkout updated_workout = 4;
   WorkoutResult workout_result = 5;
   AdaptationEvent adaptation_event = 6;
+}
+
+message GetProviderConnectionStatusRequest {
+  string athlete_id = 1;
+  Provider provider = 2;
+  string provider_connection_id = 3;
+}
+
+message GetProviderConnectionStatusResponse {
+  ProviderConnection connection = 1;
+  bool has_connection = 2;
+}
+
+message StartProviderConnectionRequest {
+  string athlete_id = 1;
+  Provider provider = 2;
+  string redirect_uri = 3;
+}
+
+message StartProviderConnectionResponse {
+  ProviderConnection connection = 1;
+  string authorization_url = 2;
+  string state = 3;
+  bool oauth_ready = 4;
+}
+
+message ProviderConnection {
+  string id = 1;
+  string athlete_id = 2;
+  Provider provider = 3;
+  string provider_user_id = 4;
+  ProviderConnectionStatus status = 5;
+  google.protobuf.Timestamp connected_at = 6;
+  google.protobuf.Timestamp disconnected_at = 7;
+  google.protobuf.Timestamp last_sync_at = 8;
+  string last_error = 9;
 }
 
 message AthleteProfile {
@@ -147,6 +185,20 @@ enum ExperienceLevel {
   EXPERIENCE_LEVEL_BEGINNER = 1;
   EXPERIENCE_LEVEL_INTERMEDIATE = 2;
   EXPERIENCE_LEVEL_ADVANCED = 3;
+}
+
+enum Provider {
+  PROVIDER_UNSPECIFIED = 0;
+  PROVIDER_GARMIN = 1;
+}
+
+enum ProviderConnectionStatus {
+  PROVIDER_CONNECTION_STATUS_UNSPECIFIED = 0;
+  PROVIDER_CONNECTION_STATUS_PENDING = 1;
+  PROVIDER_CONNECTION_STATUS_CONNECTED = 2;
+  PROVIDER_CONNECTION_STATUS_SYNCING = 3;
+  PROVIDER_CONNECTION_STATUS_ERROR = 4;
+  PROVIDER_CONNECTION_STATUS_DISCONNECTED = 5;
 }
 
 enum GoalType {

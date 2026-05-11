@@ -576,10 +576,12 @@ Notes:
 - A lightweight bottom navigation now keeps the weekly plan as the default tab and adds a history tab.
 - The history tab reuses `GetCurrentPlanWeek` data to show recent imported activity and adaptation history without adding backend endpoints.
 - Workout detail includes a disabled completion affordance that explains completion will come from imported Garmin activity later; the Flutter app does not call the demo-shaped completion RPC.
+- The Plan tab includes a small read-only Garmin connection surface with a disabled connect action, backed by `GetProviderConnectionStatus` when available and a safe not-connected fallback when status cannot be loaded.
 - `lib/src/api/runthread_api.dart` isolates the backend API boundary.
 - Dart protobuf/ConnectRPC generation remains deferred; the first mobile client uses Connect's JSON protocol directly.
 - The app currently assumes local backend `http://localhost:8080` and sends demo `athlete-1` / `goal-1` identifiers.
-- `lib/src/demo` provides a local demo fallback when the backend is unavailable or unseeded, and the plan and history tabs show a demo-data notice.
+- Local in-memory API startup seeds demo `athlete-1` / `goal-1` records so the Flutter MVP can verify backend communication without manual setup.
+- `lib/src/demo` provides a local demo fallback when the backend is unavailable or a non-demo backend is unseeded, and the plan and history tabs show a demo-data notice.
 - Widget tests cover the weekly plan, loading/error states, demo fallback notice, workout detail navigation, disabled completion affordance, imported activity completion state, adaptation summary state, and history navigation states.
 - Garmin connection screens, auth, subscriptions, and AI explanations remain deferred.
 
@@ -598,30 +600,98 @@ Stage 7 handoff:
 - The app does not call `CompleteImportedActivity` because that RPC still accepts request-supplied athlete, goal, and activity payloads for backend-loop testing.
 - Remaining Stage 7 gaps are intentionally deferred: generated Dart RPC bindings, auth-backed current athlete lookup, persisted current-plan reads, live imported activity data, and production write flows.
 
-## Stage 8: Real Garmin Integration
+## Stage 8: Provider-Neutral Activity Import Foundation
 
 Acceptance criteria:
 
-- Garmin developer/API access path is validated, including current provider terms, authentication requirements, data access model, and test data options.
-- Users can connect Garmin through the supported provider flow.
-- Activities import into the backend.
-- Imported activities are normalised and matched to planned workouts.
-- Integration failures are logged and recoverable.
+- Provider integration docs describe a provider-neutral activity import pipeline.
+- Backend boundaries make clear that provider integrations, OAuth, token refresh, imports, and webhooks are backend-owned.
+- Core domain logic uses `ImportedActivity` instead of Strava, Garmin, COROS, or Apple Health payloads.
+- Existing provider persistence and import orchestration remain provider-oriented rather than Garmin-only.
+- No real Strava or Garmin API calls are added.
 
-Prerequisites before implementation:
+Notes:
 
-- Validate Garmin access path first: confirm whether developer approval, production access, test accounts, webhooks, polling, rate limits, and data scopes are available for Runthread.
-- Define provider connection persistence before OAuth work: store athlete-owned provider connection records separately from core domain tables, including provider name, external athlete/user ID, token metadata if allowed, sync status, and last import cursor/timestamp.
-- Keep Garmin payloads inside the Garmin integration package. Normalise imported runs into provider-neutral `ImportedActivity` records before matching or adaptation logic sees them.
-- Decide the import trigger shape before adding endpoints: provider callback/webhook, scheduled sync, manual refresh, or a local mock sync command. The first implementation can use mock or sandbox data while preserving the production boundary.
-- Define mobile UX entry points without building them yet: an unobtrusive connection status surface, a connect Garmin action, an import/sync state, and recovery text for delayed or failed imports.
-- Preserve the core loop contract: Garmin import creates activities, matching links activities to planned workouts, workout results drive adaptation, and the Flutter app reads the resulting state through `GetCurrentPlanWeek`.
+- Stage 8 supersedes the previous Garmin-first integration plan.
+- Strava becomes the first likely MVP provider for validating the import loop.
+- Garmin direct integration remains on the roadmap, but it should use the same import pipeline.
 
-## Stage 9: Subscriptions and Beta Launch
+## Stage 9: Mock Strava Provider
+
+Acceptance criteria:
+
+- A mock Strava payload shape exists in a Strava provider package.
+- Mock Strava activities normalise into `domain.ImportedActivity`.
+- Tests cover representative road run, trail run, treadmill, ignored/unknown, and invalid payload cases.
+- Provider-specific Strava fields stay inside Strava package tests and adapters.
+- No Strava OAuth, token storage, webhooks, or real Strava API calls are added.
+
+## Stage 10: Strava OAuth and Token Storage
+
+Acceptance criteria:
+
+- Backend can start a Strava OAuth flow and generate/validate state.
+- Backend callback exchanges the authorization code for tokens.
+- Token storage uses secure token references or encrypted storage outside core domain models.
+- Provider connection status reflects pending, connected, error, and disconnected states.
+- Flutter may open the backend-provided authorization URL, but does not store tokens or call Strava directly.
+
+## Stage 11: Strava Activity Backfill/Import
+
+Acceptance criteria:
+
+- Backend can enqueue or run an initial Strava backfill/import job for a connected athlete.
+- Import jobs fetch Strava activity details through a rate-limit-aware boundary.
+- Imported Strava activities are idempotently recorded and normalised into `ImportedActivity`.
+- Backfill status and errors are persisted for retry/support.
+- Tests use mocks or fixtures only; no real Strava API calls run in automated tests.
+
+## Stage 12: Strava Webhook Handling
+
+Acceptance criteria:
+
+- Backend exposes provider-facing Strava webhook endpoints.
+- Webhook verification and event deduplication are implemented according to Strava requirements.
+- Activity create/update/delete events become import jobs or provider activity state changes.
+- Webhook retries and failures are observable and recoverable.
+- Webhook payloads do not flow directly into planning or adaptation logic.
+
+## Stage 13: Activity Matching to Planned Workouts
+
+Acceptance criteria:
+
+- Imported activities from Strava use the same matching flow as existing provider-neutral imports.
+- The backend can match imported activity to the likely planned workout for the current athlete.
+- Confident, uncertain, rejected, and manual match paths remain represented in `WorkoutMatch`.
+- Flutter reads match state through provider-neutral plan/read APIs.
+- Provider-specific matching rules are avoided unless first mapped to provider-neutral signals.
+
+## Stage 14: Adaptation from Imported Activities
+
+Acceptance criteria:
+
+- Matched imported activities produce `WorkoutResult` records.
+- Deterministic adaptation rules consume workout results from imported activities.
+- Adaptation events explain what changed and why without relying on provider-specific payloads.
+- Strava-derived activity data is not sent to AI prompts or used for AI model training.
+- End-to-end tests cover import, match, result, and adaptation using mocked provider data.
+
+## Stage 15: Garmin Direct Integration
+
+Acceptance criteria:
+
+- Garmin access, approval, data delivery, rate limits, storage, and revocation requirements are validated.
+- Garmin uses the same provider-neutral connection, import, normalisation, matching, and adaptation pipeline as Strava.
+- Garmin-specific fields remain inside Garmin provider packages and persistence boundaries.
+- Users can connect Garmin through the supported Garmin flow when available.
+- Garmin integration failures are logged, retryable where appropriate, and visible through provider-neutral status.
+
+## Stage 16: Subscriptions and Private Beta
 
 Acceptance criteria:
 
 - Subscription flow is implemented for the chosen platform and backend model.
-- Beta users can onboard, connect Garmin, view a plan, and receive adaptations.
-- Operational monitoring and support paths exist.
-- Privacy, data deletion, and provider terms are reviewed.
+- Private beta users can onboard, connect the supported MVP provider, view a plan, and receive adaptations.
+- Operational monitoring, support paths, privacy review, deletion/export behavior, and provider terms review exist.
+- Strava and Garmin data access rules are documented before beta launch.
+- The beta path does not depend on AI-generated training decisions.

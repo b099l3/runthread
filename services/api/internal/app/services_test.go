@@ -23,6 +23,9 @@ func TestNewServicesBuildsCoreLoopServiceFromStore(t *testing.T) {
 	if services.CurrentPlanWeek.Store != store {
 		t.Fatalf("CurrentPlanWeek.Store = %T, want provided store", services.CurrentPlanWeek.Store)
 	}
+	if services.ProviderConnect.Store != store {
+		t.Fatalf("ProviderConnect.Store = %T, want provided store", services.ProviderConnect.Store)
+	}
 }
 
 func TestNewServicesRequiresStore(t *testing.T) {

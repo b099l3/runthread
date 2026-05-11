@@ -74,6 +74,110 @@ func (ExperienceLevel) EnumDescriptor() ([]byte, []int) {
 	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{0}
 }
 
+type Provider int32
+
+const (
+	Provider_PROVIDER_UNSPECIFIED Provider = 0
+	Provider_PROVIDER_GARMIN      Provider = 1
+)
+
+// Enum value maps for Provider.
+var (
+	Provider_name = map[int32]string{
+		0: "PROVIDER_UNSPECIFIED",
+		1: "PROVIDER_GARMIN",
+	}
+	Provider_value = map[string]int32{
+		"PROVIDER_UNSPECIFIED": 0,
+		"PROVIDER_GARMIN":      1,
+	}
+)
+
+func (x Provider) Enum() *Provider {
+	p := new(Provider)
+	*p = x
+	return p
+}
+
+func (x Provider) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Provider) Descriptor() protoreflect.EnumDescriptor {
+	return file_runthread_v1_runthread_proto_enumTypes[1].Descriptor()
+}
+
+func (Provider) Type() protoreflect.EnumType {
+	return &file_runthread_v1_runthread_proto_enumTypes[1]
+}
+
+func (x Provider) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Provider.Descriptor instead.
+func (Provider) EnumDescriptor() ([]byte, []int) {
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{1}
+}
+
+type ProviderConnectionStatus int32
+
+const (
+	ProviderConnectionStatus_PROVIDER_CONNECTION_STATUS_UNSPECIFIED  ProviderConnectionStatus = 0
+	ProviderConnectionStatus_PROVIDER_CONNECTION_STATUS_PENDING      ProviderConnectionStatus = 1
+	ProviderConnectionStatus_PROVIDER_CONNECTION_STATUS_CONNECTED    ProviderConnectionStatus = 2
+	ProviderConnectionStatus_PROVIDER_CONNECTION_STATUS_SYNCING      ProviderConnectionStatus = 3
+	ProviderConnectionStatus_PROVIDER_CONNECTION_STATUS_ERROR        ProviderConnectionStatus = 4
+	ProviderConnectionStatus_PROVIDER_CONNECTION_STATUS_DISCONNECTED ProviderConnectionStatus = 5
+)
+
+// Enum value maps for ProviderConnectionStatus.
+var (
+	ProviderConnectionStatus_name = map[int32]string{
+		0: "PROVIDER_CONNECTION_STATUS_UNSPECIFIED",
+		1: "PROVIDER_CONNECTION_STATUS_PENDING",
+		2: "PROVIDER_CONNECTION_STATUS_CONNECTED",
+		3: "PROVIDER_CONNECTION_STATUS_SYNCING",
+		4: "PROVIDER_CONNECTION_STATUS_ERROR",
+		5: "PROVIDER_CONNECTION_STATUS_DISCONNECTED",
+	}
+	ProviderConnectionStatus_value = map[string]int32{
+		"PROVIDER_CONNECTION_STATUS_UNSPECIFIED":  0,
+		"PROVIDER_CONNECTION_STATUS_PENDING":      1,
+		"PROVIDER_CONNECTION_STATUS_CONNECTED":    2,
+		"PROVIDER_CONNECTION_STATUS_SYNCING":      3,
+		"PROVIDER_CONNECTION_STATUS_ERROR":        4,
+		"PROVIDER_CONNECTION_STATUS_DISCONNECTED": 5,
+	}
+)
+
+func (x ProviderConnectionStatus) Enum() *ProviderConnectionStatus {
+	p := new(ProviderConnectionStatus)
+	*p = x
+	return p
+}
+
+func (x ProviderConnectionStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ProviderConnectionStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_runthread_v1_runthread_proto_enumTypes[2].Descriptor()
+}
+
+func (ProviderConnectionStatus) Type() protoreflect.EnumType {
+	return &file_runthread_v1_runthread_proto_enumTypes[2]
+}
+
+func (x ProviderConnectionStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ProviderConnectionStatus.Descriptor instead.
+func (ProviderConnectionStatus) EnumDescriptor() ([]byte, []int) {
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{2}
+}
+
 type GoalType int32
 
 const (
@@ -113,11 +217,11 @@ func (x GoalType) String() string {
 }
 
 func (GoalType) Descriptor() protoreflect.EnumDescriptor {
-	return file_runthread_v1_runthread_proto_enumTypes[1].Descriptor()
+	return file_runthread_v1_runthread_proto_enumTypes[3].Descriptor()
 }
 
 func (GoalType) Type() protoreflect.EnumType {
-	return &file_runthread_v1_runthread_proto_enumTypes[1]
+	return &file_runthread_v1_runthread_proto_enumTypes[3]
 }
 
 func (x GoalType) Number() protoreflect.EnumNumber {
@@ -126,7 +230,7 @@ func (x GoalType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use GoalType.Descriptor instead.
 func (GoalType) EnumDescriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{1}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{3}
 }
 
 type WeekFocus int32
@@ -171,11 +275,11 @@ func (x WeekFocus) String() string {
 }
 
 func (WeekFocus) Descriptor() protoreflect.EnumDescriptor {
-	return file_runthread_v1_runthread_proto_enumTypes[2].Descriptor()
+	return file_runthread_v1_runthread_proto_enumTypes[4].Descriptor()
 }
 
 func (WeekFocus) Type() protoreflect.EnumType {
-	return &file_runthread_v1_runthread_proto_enumTypes[2]
+	return &file_runthread_v1_runthread_proto_enumTypes[4]
 }
 
 func (x WeekFocus) Number() protoreflect.EnumNumber {
@@ -184,7 +288,7 @@ func (x WeekFocus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use WeekFocus.Descriptor instead.
 func (WeekFocus) EnumDescriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{2}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{4}
 }
 
 type WorkoutType int32
@@ -235,11 +339,11 @@ func (x WorkoutType) String() string {
 }
 
 func (WorkoutType) Descriptor() protoreflect.EnumDescriptor {
-	return file_runthread_v1_runthread_proto_enumTypes[3].Descriptor()
+	return file_runthread_v1_runthread_proto_enumTypes[5].Descriptor()
 }
 
 func (WorkoutType) Type() protoreflect.EnumType {
-	return &file_runthread_v1_runthread_proto_enumTypes[3]
+	return &file_runthread_v1_runthread_proto_enumTypes[5]
 }
 
 func (x WorkoutType) Number() protoreflect.EnumNumber {
@@ -248,7 +352,7 @@ func (x WorkoutType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use WorkoutType.Descriptor instead.
 func (WorkoutType) EnumDescriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{3}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{5}
 }
 
 type PlannedWorkoutStatus int32
@@ -293,11 +397,11 @@ func (x PlannedWorkoutStatus) String() string {
 }
 
 func (PlannedWorkoutStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_runthread_v1_runthread_proto_enumTypes[4].Descriptor()
+	return file_runthread_v1_runthread_proto_enumTypes[6].Descriptor()
 }
 
 func (PlannedWorkoutStatus) Type() protoreflect.EnumType {
-	return &file_runthread_v1_runthread_proto_enumTypes[4]
+	return &file_runthread_v1_runthread_proto_enumTypes[6]
 }
 
 func (x PlannedWorkoutStatus) Number() protoreflect.EnumNumber {
@@ -306,7 +410,7 @@ func (x PlannedWorkoutStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use PlannedWorkoutStatus.Descriptor instead.
 func (PlannedWorkoutStatus) EnumDescriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{4}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{6}
 }
 
 type ActivityType int32
@@ -351,11 +455,11 @@ func (x ActivityType) String() string {
 }
 
 func (ActivityType) Descriptor() protoreflect.EnumDescriptor {
-	return file_runthread_v1_runthread_proto_enumTypes[5].Descriptor()
+	return file_runthread_v1_runthread_proto_enumTypes[7].Descriptor()
 }
 
 func (ActivityType) Type() protoreflect.EnumType {
-	return &file_runthread_v1_runthread_proto_enumTypes[5]
+	return &file_runthread_v1_runthread_proto_enumTypes[7]
 }
 
 func (x ActivityType) Number() protoreflect.EnumNumber {
@@ -364,7 +468,7 @@ func (x ActivityType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ActivityType.Descriptor instead.
 func (ActivityType) EnumDescriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{5}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{7}
 }
 
 type WorkoutMatchStatus int32
@@ -403,11 +507,11 @@ func (x WorkoutMatchStatus) String() string {
 }
 
 func (WorkoutMatchStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_runthread_v1_runthread_proto_enumTypes[6].Descriptor()
+	return file_runthread_v1_runthread_proto_enumTypes[8].Descriptor()
 }
 
 func (WorkoutMatchStatus) Type() protoreflect.EnumType {
-	return &file_runthread_v1_runthread_proto_enumTypes[6]
+	return &file_runthread_v1_runthread_proto_enumTypes[8]
 }
 
 func (x WorkoutMatchStatus) Number() protoreflect.EnumNumber {
@@ -416,7 +520,7 @@ func (x WorkoutMatchStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use WorkoutMatchStatus.Descriptor instead.
 func (WorkoutMatchStatus) EnumDescriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{6}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{8}
 }
 
 type MatchConfidence int32
@@ -455,11 +559,11 @@ func (x MatchConfidence) String() string {
 }
 
 func (MatchConfidence) Descriptor() protoreflect.EnumDescriptor {
-	return file_runthread_v1_runthread_proto_enumTypes[7].Descriptor()
+	return file_runthread_v1_runthread_proto_enumTypes[9].Descriptor()
 }
 
 func (MatchConfidence) Type() protoreflect.EnumType {
-	return &file_runthread_v1_runthread_proto_enumTypes[7]
+	return &file_runthread_v1_runthread_proto_enumTypes[9]
 }
 
 func (x MatchConfidence) Number() protoreflect.EnumNumber {
@@ -468,7 +572,7 @@ func (x MatchConfidence) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MatchConfidence.Descriptor instead.
 func (MatchConfidence) EnumDescriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{7}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{9}
 }
 
 type MatchSource int32
@@ -504,11 +608,11 @@ func (x MatchSource) String() string {
 }
 
 func (MatchSource) Descriptor() protoreflect.EnumDescriptor {
-	return file_runthread_v1_runthread_proto_enumTypes[8].Descriptor()
+	return file_runthread_v1_runthread_proto_enumTypes[10].Descriptor()
 }
 
 func (MatchSource) Type() protoreflect.EnumType {
-	return &file_runthread_v1_runthread_proto_enumTypes[8]
+	return &file_runthread_v1_runthread_proto_enumTypes[10]
 }
 
 func (x MatchSource) Number() protoreflect.EnumNumber {
@@ -517,7 +621,7 @@ func (x MatchSource) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MatchSource.Descriptor instead.
 func (MatchSource) EnumDescriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{8}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{10}
 }
 
 type WorkoutOutcome int32
@@ -568,11 +672,11 @@ func (x WorkoutOutcome) String() string {
 }
 
 func (WorkoutOutcome) Descriptor() protoreflect.EnumDescriptor {
-	return file_runthread_v1_runthread_proto_enumTypes[9].Descriptor()
+	return file_runthread_v1_runthread_proto_enumTypes[11].Descriptor()
 }
 
 func (WorkoutOutcome) Type() protoreflect.EnumType {
-	return &file_runthread_v1_runthread_proto_enumTypes[9]
+	return &file_runthread_v1_runthread_proto_enumTypes[11]
 }
 
 func (x WorkoutOutcome) Number() protoreflect.EnumNumber {
@@ -581,7 +685,7 @@ func (x WorkoutOutcome) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use WorkoutOutcome.Descriptor instead.
 func (WorkoutOutcome) EnumDescriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{9}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{11}
 }
 
 type AdaptationType int32
@@ -626,11 +730,11 @@ func (x AdaptationType) String() string {
 }
 
 func (AdaptationType) Descriptor() protoreflect.EnumDescriptor {
-	return file_runthread_v1_runthread_proto_enumTypes[10].Descriptor()
+	return file_runthread_v1_runthread_proto_enumTypes[12].Descriptor()
 }
 
 func (AdaptationType) Type() protoreflect.EnumType {
-	return &file_runthread_v1_runthread_proto_enumTypes[10]
+	return &file_runthread_v1_runthread_proto_enumTypes[12]
 }
 
 func (x AdaptationType) Number() protoreflect.EnumNumber {
@@ -639,7 +743,7 @@ func (x AdaptationType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AdaptationType.Descriptor instead.
 func (AdaptationType) EnumDescriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{10}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{12}
 }
 
 type PlanChangeType int32
@@ -684,11 +788,11 @@ func (x PlanChangeType) String() string {
 }
 
 func (PlanChangeType) Descriptor() protoreflect.EnumDescriptor {
-	return file_runthread_v1_runthread_proto_enumTypes[11].Descriptor()
+	return file_runthread_v1_runthread_proto_enumTypes[13].Descriptor()
 }
 
 func (PlanChangeType) Type() protoreflect.EnumType {
-	return &file_runthread_v1_runthread_proto_enumTypes[11]
+	return &file_runthread_v1_runthread_proto_enumTypes[13]
 }
 
 func (x PlanChangeType) Number() protoreflect.EnumNumber {
@@ -697,7 +801,7 @@ func (x PlanChangeType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use PlanChangeType.Descriptor instead.
 func (PlanChangeType) EnumDescriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{11}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{13}
 }
 
 type GetCurrentPlanWeekRequest struct {
@@ -1012,6 +1116,354 @@ func (x *CompleteImportedActivityResponse) GetAdaptationEvent() *AdaptationEvent
 	return nil
 }
 
+type GetProviderConnectionStatusRequest struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	AthleteId            string                 `protobuf:"bytes,1,opt,name=athlete_id,json=athleteId,proto3" json:"athlete_id,omitempty"`
+	Provider             Provider               `protobuf:"varint,2,opt,name=provider,proto3,enum=runthread.v1.Provider" json:"provider,omitempty"`
+	ProviderConnectionId string                 `protobuf:"bytes,3,opt,name=provider_connection_id,json=providerConnectionId,proto3" json:"provider_connection_id,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *GetProviderConnectionStatusRequest) Reset() {
+	*x = GetProviderConnectionStatusRequest{}
+	mi := &file_runthread_v1_runthread_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetProviderConnectionStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetProviderConnectionStatusRequest) ProtoMessage() {}
+
+func (x *GetProviderConnectionStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_runthread_v1_runthread_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetProviderConnectionStatusRequest.ProtoReflect.Descriptor instead.
+func (*GetProviderConnectionStatusRequest) Descriptor() ([]byte, []int) {
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GetProviderConnectionStatusRequest) GetAthleteId() string {
+	if x != nil {
+		return x.AthleteId
+	}
+	return ""
+}
+
+func (x *GetProviderConnectionStatusRequest) GetProvider() Provider {
+	if x != nil {
+		return x.Provider
+	}
+	return Provider_PROVIDER_UNSPECIFIED
+}
+
+func (x *GetProviderConnectionStatusRequest) GetProviderConnectionId() string {
+	if x != nil {
+		return x.ProviderConnectionId
+	}
+	return ""
+}
+
+type GetProviderConnectionStatusResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Connection    *ProviderConnection    `protobuf:"bytes,1,opt,name=connection,proto3" json:"connection,omitempty"`
+	HasConnection bool                   `protobuf:"varint,2,opt,name=has_connection,json=hasConnection,proto3" json:"has_connection,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetProviderConnectionStatusResponse) Reset() {
+	*x = GetProviderConnectionStatusResponse{}
+	mi := &file_runthread_v1_runthread_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetProviderConnectionStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetProviderConnectionStatusResponse) ProtoMessage() {}
+
+func (x *GetProviderConnectionStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_runthread_v1_runthread_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetProviderConnectionStatusResponse.ProtoReflect.Descriptor instead.
+func (*GetProviderConnectionStatusResponse) Descriptor() ([]byte, []int) {
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *GetProviderConnectionStatusResponse) GetConnection() *ProviderConnection {
+	if x != nil {
+		return x.Connection
+	}
+	return nil
+}
+
+func (x *GetProviderConnectionStatusResponse) GetHasConnection() bool {
+	if x != nil {
+		return x.HasConnection
+	}
+	return false
+}
+
+type StartProviderConnectionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AthleteId     string                 `protobuf:"bytes,1,opt,name=athlete_id,json=athleteId,proto3" json:"athlete_id,omitempty"`
+	Provider      Provider               `protobuf:"varint,2,opt,name=provider,proto3,enum=runthread.v1.Provider" json:"provider,omitempty"`
+	RedirectUri   string                 `protobuf:"bytes,3,opt,name=redirect_uri,json=redirectUri,proto3" json:"redirect_uri,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StartProviderConnectionRequest) Reset() {
+	*x = StartProviderConnectionRequest{}
+	mi := &file_runthread_v1_runthread_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartProviderConnectionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartProviderConnectionRequest) ProtoMessage() {}
+
+func (x *StartProviderConnectionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_runthread_v1_runthread_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartProviderConnectionRequest.ProtoReflect.Descriptor instead.
+func (*StartProviderConnectionRequest) Descriptor() ([]byte, []int) {
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *StartProviderConnectionRequest) GetAthleteId() string {
+	if x != nil {
+		return x.AthleteId
+	}
+	return ""
+}
+
+func (x *StartProviderConnectionRequest) GetProvider() Provider {
+	if x != nil {
+		return x.Provider
+	}
+	return Provider_PROVIDER_UNSPECIFIED
+}
+
+func (x *StartProviderConnectionRequest) GetRedirectUri() string {
+	if x != nil {
+		return x.RedirectUri
+	}
+	return ""
+}
+
+type StartProviderConnectionResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Connection       *ProviderConnection    `protobuf:"bytes,1,opt,name=connection,proto3" json:"connection,omitempty"`
+	AuthorizationUrl string                 `protobuf:"bytes,2,opt,name=authorization_url,json=authorizationUrl,proto3" json:"authorization_url,omitempty"`
+	State            string                 `protobuf:"bytes,3,opt,name=state,proto3" json:"state,omitempty"`
+	OauthReady       bool                   `protobuf:"varint,4,opt,name=oauth_ready,json=oauthReady,proto3" json:"oauth_ready,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *StartProviderConnectionResponse) Reset() {
+	*x = StartProviderConnectionResponse{}
+	mi := &file_runthread_v1_runthread_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartProviderConnectionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartProviderConnectionResponse) ProtoMessage() {}
+
+func (x *StartProviderConnectionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_runthread_v1_runthread_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartProviderConnectionResponse.ProtoReflect.Descriptor instead.
+func (*StartProviderConnectionResponse) Descriptor() ([]byte, []int) {
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *StartProviderConnectionResponse) GetConnection() *ProviderConnection {
+	if x != nil {
+		return x.Connection
+	}
+	return nil
+}
+
+func (x *StartProviderConnectionResponse) GetAuthorizationUrl() string {
+	if x != nil {
+		return x.AuthorizationUrl
+	}
+	return ""
+}
+
+func (x *StartProviderConnectionResponse) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *StartProviderConnectionResponse) GetOauthReady() bool {
+	if x != nil {
+		return x.OauthReady
+	}
+	return false
+}
+
+type ProviderConnection struct {
+	state          protoimpl.MessageState   `protogen:"open.v1"`
+	Id             string                   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	AthleteId      string                   `protobuf:"bytes,2,opt,name=athlete_id,json=athleteId,proto3" json:"athlete_id,omitempty"`
+	Provider       Provider                 `protobuf:"varint,3,opt,name=provider,proto3,enum=runthread.v1.Provider" json:"provider,omitempty"`
+	ProviderUserId string                   `protobuf:"bytes,4,opt,name=provider_user_id,json=providerUserId,proto3" json:"provider_user_id,omitempty"`
+	Status         ProviderConnectionStatus `protobuf:"varint,5,opt,name=status,proto3,enum=runthread.v1.ProviderConnectionStatus" json:"status,omitempty"`
+	ConnectedAt    *timestamppb.Timestamp   `protobuf:"bytes,6,opt,name=connected_at,json=connectedAt,proto3" json:"connected_at,omitempty"`
+	DisconnectedAt *timestamppb.Timestamp   `protobuf:"bytes,7,opt,name=disconnected_at,json=disconnectedAt,proto3" json:"disconnected_at,omitempty"`
+	LastSyncAt     *timestamppb.Timestamp   `protobuf:"bytes,8,opt,name=last_sync_at,json=lastSyncAt,proto3" json:"last_sync_at,omitempty"`
+	LastError      string                   `protobuf:"bytes,9,opt,name=last_error,json=lastError,proto3" json:"last_error,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ProviderConnection) Reset() {
+	*x = ProviderConnection{}
+	mi := &file_runthread_v1_runthread_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProviderConnection) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProviderConnection) ProtoMessage() {}
+
+func (x *ProviderConnection) ProtoReflect() protoreflect.Message {
+	mi := &file_runthread_v1_runthread_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProviderConnection.ProtoReflect.Descriptor instead.
+func (*ProviderConnection) Descriptor() ([]byte, []int) {
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ProviderConnection) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ProviderConnection) GetAthleteId() string {
+	if x != nil {
+		return x.AthleteId
+	}
+	return ""
+}
+
+func (x *ProviderConnection) GetProvider() Provider {
+	if x != nil {
+		return x.Provider
+	}
+	return Provider_PROVIDER_UNSPECIFIED
+}
+
+func (x *ProviderConnection) GetProviderUserId() string {
+	if x != nil {
+		return x.ProviderUserId
+	}
+	return ""
+}
+
+func (x *ProviderConnection) GetStatus() ProviderConnectionStatus {
+	if x != nil {
+		return x.Status
+	}
+	return ProviderConnectionStatus_PROVIDER_CONNECTION_STATUS_UNSPECIFIED
+}
+
+func (x *ProviderConnection) GetConnectedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ConnectedAt
+	}
+	return nil
+}
+
+func (x *ProviderConnection) GetDisconnectedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.DisconnectedAt
+	}
+	return nil
+}
+
+func (x *ProviderConnection) GetLastSyncAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastSyncAt
+	}
+	return nil
+}
+
+func (x *ProviderConnection) GetLastError() string {
+	if x != nil {
+		return x.LastError
+	}
+	return ""
+}
+
 type AthleteProfile struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
 	Id                          string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1026,7 +1478,7 @@ type AthleteProfile struct {
 
 func (x *AthleteProfile) Reset() {
 	*x = AthleteProfile{}
-	mi := &file_runthread_v1_runthread_proto_msgTypes[4]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1038,7 +1490,7 @@ func (x *AthleteProfile) String() string {
 func (*AthleteProfile) ProtoMessage() {}
 
 func (x *AthleteProfile) ProtoReflect() protoreflect.Message {
-	mi := &file_runthread_v1_runthread_proto_msgTypes[4]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1051,7 +1503,7 @@ func (x *AthleteProfile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AthleteProfile.ProtoReflect.Descriptor instead.
 func (*AthleteProfile) Descriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{4}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *AthleteProfile) GetId() string {
@@ -1111,7 +1563,7 @@ type TrainingGoal struct {
 
 func (x *TrainingGoal) Reset() {
 	*x = TrainingGoal{}
-	mi := &file_runthread_v1_runthread_proto_msgTypes[5]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1123,7 +1575,7 @@ func (x *TrainingGoal) String() string {
 func (*TrainingGoal) ProtoMessage() {}
 
 func (x *TrainingGoal) ProtoReflect() protoreflect.Message {
-	mi := &file_runthread_v1_runthread_proto_msgTypes[5]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1136,7 +1588,7 @@ func (x *TrainingGoal) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TrainingGoal.ProtoReflect.Descriptor instead.
 func (*TrainingGoal) Descriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{5}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *TrainingGoal) GetId() string {
@@ -1204,7 +1656,7 @@ type PlanWeek struct {
 
 func (x *PlanWeek) Reset() {
 	*x = PlanWeek{}
-	mi := &file_runthread_v1_runthread_proto_msgTypes[6]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1216,7 +1668,7 @@ func (x *PlanWeek) String() string {
 func (*PlanWeek) ProtoMessage() {}
 
 func (x *PlanWeek) ProtoReflect() protoreflect.Message {
-	mi := &file_runthread_v1_runthread_proto_msgTypes[6]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1229,7 +1681,7 @@ func (x *PlanWeek) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanWeek.ProtoReflect.Descriptor instead.
 func (*PlanWeek) Descriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{6}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *PlanWeek) GetId() string {
@@ -1306,7 +1758,7 @@ type PlannedWorkout struct {
 
 func (x *PlannedWorkout) Reset() {
 	*x = PlannedWorkout{}
-	mi := &file_runthread_v1_runthread_proto_msgTypes[7]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1318,7 +1770,7 @@ func (x *PlannedWorkout) String() string {
 func (*PlannedWorkout) ProtoMessage() {}
 
 func (x *PlannedWorkout) ProtoReflect() protoreflect.Message {
-	mi := &file_runthread_v1_runthread_proto_msgTypes[7]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1331,7 +1783,7 @@ func (x *PlannedWorkout) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlannedWorkout.ProtoReflect.Descriptor instead.
 func (*PlannedWorkout) Descriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{7}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *PlannedWorkout) GetId() string {
@@ -1414,7 +1866,7 @@ type IntensityTarget struct {
 
 func (x *IntensityTarget) Reset() {
 	*x = IntensityTarget{}
-	mi := &file_runthread_v1_runthread_proto_msgTypes[8]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1426,7 +1878,7 @@ func (x *IntensityTarget) String() string {
 func (*IntensityTarget) ProtoMessage() {}
 
 func (x *IntensityTarget) ProtoReflect() protoreflect.Message {
-	mi := &file_runthread_v1_runthread_proto_msgTypes[8]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1439,7 +1891,7 @@ func (x *IntensityTarget) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IntensityTarget.ProtoReflect.Descriptor instead.
 func (*IntensityTarget) Descriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{8}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *IntensityTarget) GetKind() string {
@@ -1472,7 +1924,7 @@ type ImportedActivity struct {
 
 func (x *ImportedActivity) Reset() {
 	*x = ImportedActivity{}
-	mi := &file_runthread_v1_runthread_proto_msgTypes[9]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1484,7 +1936,7 @@ func (x *ImportedActivity) String() string {
 func (*ImportedActivity) ProtoMessage() {}
 
 func (x *ImportedActivity) ProtoReflect() protoreflect.Message {
-	mi := &file_runthread_v1_runthread_proto_msgTypes[9]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1497,7 +1949,7 @@ func (x *ImportedActivity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImportedActivity.ProtoReflect.Descriptor instead.
 func (*ImportedActivity) Descriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{9}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ImportedActivity) GetId() string {
@@ -1572,7 +2024,7 @@ type WorkoutMatch struct {
 
 func (x *WorkoutMatch) Reset() {
 	*x = WorkoutMatch{}
-	mi := &file_runthread_v1_runthread_proto_msgTypes[10]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1584,7 +2036,7 @@ func (x *WorkoutMatch) String() string {
 func (*WorkoutMatch) ProtoMessage() {}
 
 func (x *WorkoutMatch) ProtoReflect() protoreflect.Message {
-	mi := &file_runthread_v1_runthread_proto_msgTypes[10]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1597,7 +2049,7 @@ func (x *WorkoutMatch) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkoutMatch.ProtoReflect.Descriptor instead.
 func (*WorkoutMatch) Descriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{10}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *WorkoutMatch) GetId() string {
@@ -1672,7 +2124,7 @@ type WorkoutResult struct {
 
 func (x *WorkoutResult) Reset() {
 	*x = WorkoutResult{}
-	mi := &file_runthread_v1_runthread_proto_msgTypes[11]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1684,7 +2136,7 @@ func (x *WorkoutResult) String() string {
 func (*WorkoutResult) ProtoMessage() {}
 
 func (x *WorkoutResult) ProtoReflect() protoreflect.Message {
-	mi := &file_runthread_v1_runthread_proto_msgTypes[11]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1697,7 +2149,7 @@ func (x *WorkoutResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkoutResult.ProtoReflect.Descriptor instead.
 func (*WorkoutResult) Descriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{11}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *WorkoutResult) GetId() string {
@@ -1772,7 +2224,7 @@ type AdaptationEvent struct {
 
 func (x *AdaptationEvent) Reset() {
 	*x = AdaptationEvent{}
-	mi := &file_runthread_v1_runthread_proto_msgTypes[12]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1784,7 +2236,7 @@ func (x *AdaptationEvent) String() string {
 func (*AdaptationEvent) ProtoMessage() {}
 
 func (x *AdaptationEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_runthread_v1_runthread_proto_msgTypes[12]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1797,7 +2249,7 @@ func (x *AdaptationEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AdaptationEvent.ProtoReflect.Descriptor instead.
 func (*AdaptationEvent) Descriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{12}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *AdaptationEvent) GetId() string {
@@ -1867,7 +2319,7 @@ type PlanChange struct {
 
 func (x *PlanChange) Reset() {
 	*x = PlanChange{}
-	mi := &file_runthread_v1_runthread_proto_msgTypes[13]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1879,7 +2331,7 @@ func (x *PlanChange) String() string {
 func (*PlanChange) ProtoMessage() {}
 
 func (x *PlanChange) ProtoReflect() protoreflect.Message {
-	mi := &file_runthread_v1_runthread_proto_msgTypes[13]
+	mi := &file_runthread_v1_runthread_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1892,7 +2344,7 @@ func (x *PlanChange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanChange.ProtoReflect.Descriptor instead.
 func (*PlanChange) Descriptor() ([]byte, []int) {
-	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{13}
+	return file_runthread_v1_runthread_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *PlanChange) GetPlannedWorkoutId() string {
@@ -1947,7 +2399,43 @@ const file_runthread_v1_runthread_proto_rawDesc = "" +
 	"\rworkout_match\x18\x03 \x01(\v2\x1a.runthread.v1.WorkoutMatchR\fworkoutMatch\x12E\n" +
 	"\x0fupdated_workout\x18\x04 \x01(\v2\x1c.runthread.v1.PlannedWorkoutR\x0eupdatedWorkout\x12B\n" +
 	"\x0eworkout_result\x18\x05 \x01(\v2\x1b.runthread.v1.WorkoutResultR\rworkoutResult\x12H\n" +
-	"\x10adaptation_event\x18\x06 \x01(\v2\x1d.runthread.v1.AdaptationEventR\x0fadaptationEvent\"\xa2\x02\n" +
+	"\x10adaptation_event\x18\x06 \x01(\v2\x1d.runthread.v1.AdaptationEventR\x0fadaptationEvent\"\xad\x01\n" +
+	"\"GetProviderConnectionStatusRequest\x12\x1d\n" +
+	"\n" +
+	"athlete_id\x18\x01 \x01(\tR\tathleteId\x122\n" +
+	"\bprovider\x18\x02 \x01(\x0e2\x16.runthread.v1.ProviderR\bprovider\x124\n" +
+	"\x16provider_connection_id\x18\x03 \x01(\tR\x14providerConnectionId\"\x8e\x01\n" +
+	"#GetProviderConnectionStatusResponse\x12@\n" +
+	"\n" +
+	"connection\x18\x01 \x01(\v2 .runthread.v1.ProviderConnectionR\n" +
+	"connection\x12%\n" +
+	"\x0ehas_connection\x18\x02 \x01(\bR\rhasConnection\"\x96\x01\n" +
+	"\x1eStartProviderConnectionRequest\x12\x1d\n" +
+	"\n" +
+	"athlete_id\x18\x01 \x01(\tR\tathleteId\x122\n" +
+	"\bprovider\x18\x02 \x01(\x0e2\x16.runthread.v1.ProviderR\bprovider\x12!\n" +
+	"\fredirect_uri\x18\x03 \x01(\tR\vredirectUri\"\xc7\x01\n" +
+	"\x1fStartProviderConnectionResponse\x12@\n" +
+	"\n" +
+	"connection\x18\x01 \x01(\v2 .runthread.v1.ProviderConnectionR\n" +
+	"connection\x12+\n" +
+	"\x11authorization_url\x18\x02 \x01(\tR\x10authorizationUrl\x12\x14\n" +
+	"\x05state\x18\x03 \x01(\tR\x05state\x12\x1f\n" +
+	"\voauth_ready\x18\x04 \x01(\bR\n" +
+	"oauthReady\"\xc2\x03\n" +
+	"\x12ProviderConnection\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
+	"\n" +
+	"athlete_id\x18\x02 \x01(\tR\tathleteId\x122\n" +
+	"\bprovider\x18\x03 \x01(\x0e2\x16.runthread.v1.ProviderR\bprovider\x12(\n" +
+	"\x10provider_user_id\x18\x04 \x01(\tR\x0eproviderUserId\x12>\n" +
+	"\x06status\x18\x05 \x01(\x0e2&.runthread.v1.ProviderConnectionStatusR\x06status\x12=\n" +
+	"\fconnected_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\vconnectedAt\x12C\n" +
+	"\x0fdisconnected_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\x0edisconnectedAt\x12<\n" +
+	"\flast_sync_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"lastSyncAt\x12\x1d\n" +
+	"\n" +
+	"last_error\x18\t \x01(\tR\tlastError\"\xa2\x02\n" +
 	"\x0eAthleteProfile\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12H\n" +
@@ -2045,7 +2533,17 @@ const file_runthread_v1_runthread_proto_rawDesc = "" +
 	"\x1cEXPERIENCE_LEVEL_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19EXPERIENCE_LEVEL_BEGINNER\x10\x01\x12!\n" +
 	"\x1dEXPERIENCE_LEVEL_INTERMEDIATE\x10\x02\x12\x1d\n" +
-	"\x19EXPERIENCE_LEVEL_ADVANCED\x10\x03*\x84\x01\n" +
+	"\x19EXPERIENCE_LEVEL_ADVANCED\x10\x03*9\n" +
+	"\bProvider\x12\x18\n" +
+	"\x14PROVIDER_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fPROVIDER_GARMIN\x10\x01*\x93\x02\n" +
+	"\x18ProviderConnectionStatus\x12*\n" +
+	"&PROVIDER_CONNECTION_STATUS_UNSPECIFIED\x10\x00\x12&\n" +
+	"\"PROVIDER_CONNECTION_STATUS_PENDING\x10\x01\x12(\n" +
+	"$PROVIDER_CONNECTION_STATUS_CONNECTED\x10\x02\x12&\n" +
+	"\"PROVIDER_CONNECTION_STATUS_SYNCING\x10\x03\x12$\n" +
+	" PROVIDER_CONNECTION_STATUS_ERROR\x10\x04\x12+\n" +
+	"'PROVIDER_CONNECTION_STATUS_DISCONNECTED\x10\x05*\x84\x01\n" +
 	"\bGoalType\x12\x19\n" +
 	"\x15GOAL_TYPE_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19GOAL_TYPE_GENERAL_FITNESS\x10\x01\x12\x12\n" +
@@ -2118,9 +2616,11 @@ const file_runthread_v1_runthread_proto_rawDesc = "" +
 	" PLAN_CHANGE_TYPE_WORKOUT_REMOVED\x10\x02\x12\"\n" +
 	"\x1ePLAN_CHANGE_TYPE_WORKOUT_ADDED\x10\x03\x12%\n" +
 	"!PLAN_CHANGE_TYPE_WORKOUT_ADJUSTED\x10\x04\x12$\n" +
-	" PLAN_CHANGE_TYPE_PLAN_NOTE_ADDED\x10\x052\xf6\x01\n" +
+	" PLAN_CHANGE_TYPE_PLAN_NOTE_ADDED\x10\x052\xf3\x03\n" +
 	"\x10RunthreadService\x12g\n" +
-	"\x12GetCurrentPlanWeek\x12'.runthread.v1.GetCurrentPlanWeekRequest\x1a(.runthread.v1.GetCurrentPlanWeekResponse\x12y\n" +
+	"\x12GetCurrentPlanWeek\x12'.runthread.v1.GetCurrentPlanWeekRequest\x1a(.runthread.v1.GetCurrentPlanWeekResponse\x12\x82\x01\n" +
+	"\x1bGetProviderConnectionStatus\x120.runthread.v1.GetProviderConnectionStatusRequest\x1a1.runthread.v1.GetProviderConnectionStatusResponse\x12v\n" +
+	"\x17StartProviderConnection\x12,.runthread.v1.StartProviderConnectionRequest\x1a-.runthread.v1.StartProviderConnectionResponse\x12y\n" +
 	"\x18CompleteImportedActivity\x12-.runthread.v1.CompleteImportedActivityRequest\x1a..runthread.v1.CompleteImportedActivityResponseBSZQgithub.com/runthread/runthread/services/api/internal/rpc/runthread/v1;runthreadv1b\x06proto3"
 
 var (
@@ -2135,81 +2635,101 @@ func file_runthread_v1_runthread_proto_rawDescGZIP() []byte {
 	return file_runthread_v1_runthread_proto_rawDescData
 }
 
-var file_runthread_v1_runthread_proto_enumTypes = make([]protoimpl.EnumInfo, 12)
-var file_runthread_v1_runthread_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_runthread_v1_runthread_proto_enumTypes = make([]protoimpl.EnumInfo, 14)
+var file_runthread_v1_runthread_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_runthread_v1_runthread_proto_goTypes = []any{
-	(ExperienceLevel)(0),                     // 0: runthread.v1.ExperienceLevel
-	(GoalType)(0),                            // 1: runthread.v1.GoalType
-	(WeekFocus)(0),                           // 2: runthread.v1.WeekFocus
-	(WorkoutType)(0),                         // 3: runthread.v1.WorkoutType
-	(PlannedWorkoutStatus)(0),                // 4: runthread.v1.PlannedWorkoutStatus
-	(ActivityType)(0),                        // 5: runthread.v1.ActivityType
-	(WorkoutMatchStatus)(0),                  // 6: runthread.v1.WorkoutMatchStatus
-	(MatchConfidence)(0),                     // 7: runthread.v1.MatchConfidence
-	(MatchSource)(0),                         // 8: runthread.v1.MatchSource
-	(WorkoutOutcome)(0),                      // 9: runthread.v1.WorkoutOutcome
-	(AdaptationType)(0),                      // 10: runthread.v1.AdaptationType
-	(PlanChangeType)(0),                      // 11: runthread.v1.PlanChangeType
-	(*GetCurrentPlanWeekRequest)(nil),        // 12: runthread.v1.GetCurrentPlanWeekRequest
-	(*GetCurrentPlanWeekResponse)(nil),       // 13: runthread.v1.GetCurrentPlanWeekResponse
-	(*CompleteImportedActivityRequest)(nil),  // 14: runthread.v1.CompleteImportedActivityRequest
-	(*CompleteImportedActivityResponse)(nil), // 15: runthread.v1.CompleteImportedActivityResponse
-	(*AthleteProfile)(nil),                   // 16: runthread.v1.AthleteProfile
-	(*TrainingGoal)(nil),                     // 17: runthread.v1.TrainingGoal
-	(*PlanWeek)(nil),                         // 18: runthread.v1.PlanWeek
-	(*PlannedWorkout)(nil),                   // 19: runthread.v1.PlannedWorkout
-	(*IntensityTarget)(nil),                  // 20: runthread.v1.IntensityTarget
-	(*ImportedActivity)(nil),                 // 21: runthread.v1.ImportedActivity
-	(*WorkoutMatch)(nil),                     // 22: runthread.v1.WorkoutMatch
-	(*WorkoutResult)(nil),                    // 23: runthread.v1.WorkoutResult
-	(*AdaptationEvent)(nil),                  // 24: runthread.v1.AdaptationEvent
-	(*PlanChange)(nil),                       // 25: runthread.v1.PlanChange
-	(*timestamppb.Timestamp)(nil),            // 26: google.protobuf.Timestamp
+	(ExperienceLevel)(0),                        // 0: runthread.v1.ExperienceLevel
+	(Provider)(0),                               // 1: runthread.v1.Provider
+	(ProviderConnectionStatus)(0),               // 2: runthread.v1.ProviderConnectionStatus
+	(GoalType)(0),                               // 3: runthread.v1.GoalType
+	(WeekFocus)(0),                              // 4: runthread.v1.WeekFocus
+	(WorkoutType)(0),                            // 5: runthread.v1.WorkoutType
+	(PlannedWorkoutStatus)(0),                   // 6: runthread.v1.PlannedWorkoutStatus
+	(ActivityType)(0),                           // 7: runthread.v1.ActivityType
+	(WorkoutMatchStatus)(0),                     // 8: runthread.v1.WorkoutMatchStatus
+	(MatchConfidence)(0),                        // 9: runthread.v1.MatchConfidence
+	(MatchSource)(0),                            // 10: runthread.v1.MatchSource
+	(WorkoutOutcome)(0),                         // 11: runthread.v1.WorkoutOutcome
+	(AdaptationType)(0),                         // 12: runthread.v1.AdaptationType
+	(PlanChangeType)(0),                         // 13: runthread.v1.PlanChangeType
+	(*GetCurrentPlanWeekRequest)(nil),           // 14: runthread.v1.GetCurrentPlanWeekRequest
+	(*GetCurrentPlanWeekResponse)(nil),          // 15: runthread.v1.GetCurrentPlanWeekResponse
+	(*CompleteImportedActivityRequest)(nil),     // 16: runthread.v1.CompleteImportedActivityRequest
+	(*CompleteImportedActivityResponse)(nil),    // 17: runthread.v1.CompleteImportedActivityResponse
+	(*GetProviderConnectionStatusRequest)(nil),  // 18: runthread.v1.GetProviderConnectionStatusRequest
+	(*GetProviderConnectionStatusResponse)(nil), // 19: runthread.v1.GetProviderConnectionStatusResponse
+	(*StartProviderConnectionRequest)(nil),      // 20: runthread.v1.StartProviderConnectionRequest
+	(*StartProviderConnectionResponse)(nil),     // 21: runthread.v1.StartProviderConnectionResponse
+	(*ProviderConnection)(nil),                  // 22: runthread.v1.ProviderConnection
+	(*AthleteProfile)(nil),                      // 23: runthread.v1.AthleteProfile
+	(*TrainingGoal)(nil),                        // 24: runthread.v1.TrainingGoal
+	(*PlanWeek)(nil),                            // 25: runthread.v1.PlanWeek
+	(*PlannedWorkout)(nil),                      // 26: runthread.v1.PlannedWorkout
+	(*IntensityTarget)(nil),                     // 27: runthread.v1.IntensityTarget
+	(*ImportedActivity)(nil),                    // 28: runthread.v1.ImportedActivity
+	(*WorkoutMatch)(nil),                        // 29: runthread.v1.WorkoutMatch
+	(*WorkoutResult)(nil),                       // 30: runthread.v1.WorkoutResult
+	(*AdaptationEvent)(nil),                     // 31: runthread.v1.AdaptationEvent
+	(*PlanChange)(nil),                          // 32: runthread.v1.PlanChange
+	(*timestamppb.Timestamp)(nil),               // 33: google.protobuf.Timestamp
 }
 var file_runthread_v1_runthread_proto_depIdxs = []int32{
-	18, // 0: runthread.v1.GetCurrentPlanWeekResponse.plan_week:type_name -> runthread.v1.PlanWeek
-	21, // 1: runthread.v1.GetCurrentPlanWeekResponse.imported_activities:type_name -> runthread.v1.ImportedActivity
-	22, // 2: runthread.v1.GetCurrentPlanWeekResponse.workout_matches:type_name -> runthread.v1.WorkoutMatch
-	23, // 3: runthread.v1.GetCurrentPlanWeekResponse.workout_results:type_name -> runthread.v1.WorkoutResult
-	24, // 4: runthread.v1.GetCurrentPlanWeekResponse.adaptation_events:type_name -> runthread.v1.AdaptationEvent
-	16, // 5: runthread.v1.CompleteImportedActivityRequest.athlete_profile:type_name -> runthread.v1.AthleteProfile
-	17, // 6: runthread.v1.CompleteImportedActivityRequest.training_goal:type_name -> runthread.v1.TrainingGoal
-	21, // 7: runthread.v1.CompleteImportedActivityRequest.imported_activity:type_name -> runthread.v1.ImportedActivity
-	9,  // 8: runthread.v1.CompleteImportedActivityRequest.outcome:type_name -> runthread.v1.WorkoutOutcome
-	18, // 9: runthread.v1.CompleteImportedActivityResponse.plan_week:type_name -> runthread.v1.PlanWeek
-	21, // 10: runthread.v1.CompleteImportedActivityResponse.imported_activity:type_name -> runthread.v1.ImportedActivity
-	22, // 11: runthread.v1.CompleteImportedActivityResponse.workout_match:type_name -> runthread.v1.WorkoutMatch
-	19, // 12: runthread.v1.CompleteImportedActivityResponse.updated_workout:type_name -> runthread.v1.PlannedWorkout
-	23, // 13: runthread.v1.CompleteImportedActivityResponse.workout_result:type_name -> runthread.v1.WorkoutResult
-	24, // 14: runthread.v1.CompleteImportedActivityResponse.adaptation_event:type_name -> runthread.v1.AdaptationEvent
-	0,  // 15: runthread.v1.AthleteProfile.experience_level:type_name -> runthread.v1.ExperienceLevel
-	1,  // 16: runthread.v1.TrainingGoal.type:type_name -> runthread.v1.GoalType
-	2,  // 17: runthread.v1.PlanWeek.focus:type_name -> runthread.v1.WeekFocus
-	19, // 18: runthread.v1.PlanWeek.workouts:type_name -> runthread.v1.PlannedWorkout
-	3,  // 19: runthread.v1.PlannedWorkout.type:type_name -> runthread.v1.WorkoutType
-	4,  // 20: runthread.v1.PlannedWorkout.status:type_name -> runthread.v1.PlannedWorkoutStatus
-	20, // 21: runthread.v1.PlannedWorkout.intensity:type_name -> runthread.v1.IntensityTarget
-	5,  // 22: runthread.v1.ImportedActivity.type:type_name -> runthread.v1.ActivityType
-	26, // 23: runthread.v1.ImportedActivity.started_at:type_name -> google.protobuf.Timestamp
-	6,  // 24: runthread.v1.WorkoutMatch.status:type_name -> runthread.v1.WorkoutMatchStatus
-	7,  // 25: runthread.v1.WorkoutMatch.confidence:type_name -> runthread.v1.MatchConfidence
-	8,  // 26: runthread.v1.WorkoutMatch.matched_by:type_name -> runthread.v1.MatchSource
-	26, // 27: runthread.v1.WorkoutMatch.matched_at:type_name -> google.protobuf.Timestamp
-	9,  // 28: runthread.v1.WorkoutResult.outcome:type_name -> runthread.v1.WorkoutOutcome
-	26, // 29: runthread.v1.WorkoutResult.completed_at:type_name -> google.protobuf.Timestamp
-	10, // 30: runthread.v1.AdaptationEvent.type:type_name -> runthread.v1.AdaptationType
-	26, // 31: runthread.v1.AdaptationEvent.created_at:type_name -> google.protobuf.Timestamp
-	25, // 32: runthread.v1.AdaptationEvent.changes:type_name -> runthread.v1.PlanChange
-	11, // 33: runthread.v1.PlanChange.type:type_name -> runthread.v1.PlanChangeType
-	12, // 34: runthread.v1.RunthreadService.GetCurrentPlanWeek:input_type -> runthread.v1.GetCurrentPlanWeekRequest
-	14, // 35: runthread.v1.RunthreadService.CompleteImportedActivity:input_type -> runthread.v1.CompleteImportedActivityRequest
-	13, // 36: runthread.v1.RunthreadService.GetCurrentPlanWeek:output_type -> runthread.v1.GetCurrentPlanWeekResponse
-	15, // 37: runthread.v1.RunthreadService.CompleteImportedActivity:output_type -> runthread.v1.CompleteImportedActivityResponse
-	36, // [36:38] is the sub-list for method output_type
-	34, // [34:36] is the sub-list for method input_type
-	34, // [34:34] is the sub-list for extension type_name
-	34, // [34:34] is the sub-list for extension extendee
-	0,  // [0:34] is the sub-list for field type_name
+	25, // 0: runthread.v1.GetCurrentPlanWeekResponse.plan_week:type_name -> runthread.v1.PlanWeek
+	28, // 1: runthread.v1.GetCurrentPlanWeekResponse.imported_activities:type_name -> runthread.v1.ImportedActivity
+	29, // 2: runthread.v1.GetCurrentPlanWeekResponse.workout_matches:type_name -> runthread.v1.WorkoutMatch
+	30, // 3: runthread.v1.GetCurrentPlanWeekResponse.workout_results:type_name -> runthread.v1.WorkoutResult
+	31, // 4: runthread.v1.GetCurrentPlanWeekResponse.adaptation_events:type_name -> runthread.v1.AdaptationEvent
+	23, // 5: runthread.v1.CompleteImportedActivityRequest.athlete_profile:type_name -> runthread.v1.AthleteProfile
+	24, // 6: runthread.v1.CompleteImportedActivityRequest.training_goal:type_name -> runthread.v1.TrainingGoal
+	28, // 7: runthread.v1.CompleteImportedActivityRequest.imported_activity:type_name -> runthread.v1.ImportedActivity
+	11, // 8: runthread.v1.CompleteImportedActivityRequest.outcome:type_name -> runthread.v1.WorkoutOutcome
+	25, // 9: runthread.v1.CompleteImportedActivityResponse.plan_week:type_name -> runthread.v1.PlanWeek
+	28, // 10: runthread.v1.CompleteImportedActivityResponse.imported_activity:type_name -> runthread.v1.ImportedActivity
+	29, // 11: runthread.v1.CompleteImportedActivityResponse.workout_match:type_name -> runthread.v1.WorkoutMatch
+	26, // 12: runthread.v1.CompleteImportedActivityResponse.updated_workout:type_name -> runthread.v1.PlannedWorkout
+	30, // 13: runthread.v1.CompleteImportedActivityResponse.workout_result:type_name -> runthread.v1.WorkoutResult
+	31, // 14: runthread.v1.CompleteImportedActivityResponse.adaptation_event:type_name -> runthread.v1.AdaptationEvent
+	1,  // 15: runthread.v1.GetProviderConnectionStatusRequest.provider:type_name -> runthread.v1.Provider
+	22, // 16: runthread.v1.GetProviderConnectionStatusResponse.connection:type_name -> runthread.v1.ProviderConnection
+	1,  // 17: runthread.v1.StartProviderConnectionRequest.provider:type_name -> runthread.v1.Provider
+	22, // 18: runthread.v1.StartProviderConnectionResponse.connection:type_name -> runthread.v1.ProviderConnection
+	1,  // 19: runthread.v1.ProviderConnection.provider:type_name -> runthread.v1.Provider
+	2,  // 20: runthread.v1.ProviderConnection.status:type_name -> runthread.v1.ProviderConnectionStatus
+	33, // 21: runthread.v1.ProviderConnection.connected_at:type_name -> google.protobuf.Timestamp
+	33, // 22: runthread.v1.ProviderConnection.disconnected_at:type_name -> google.protobuf.Timestamp
+	33, // 23: runthread.v1.ProviderConnection.last_sync_at:type_name -> google.protobuf.Timestamp
+	0,  // 24: runthread.v1.AthleteProfile.experience_level:type_name -> runthread.v1.ExperienceLevel
+	3,  // 25: runthread.v1.TrainingGoal.type:type_name -> runthread.v1.GoalType
+	4,  // 26: runthread.v1.PlanWeek.focus:type_name -> runthread.v1.WeekFocus
+	26, // 27: runthread.v1.PlanWeek.workouts:type_name -> runthread.v1.PlannedWorkout
+	5,  // 28: runthread.v1.PlannedWorkout.type:type_name -> runthread.v1.WorkoutType
+	6,  // 29: runthread.v1.PlannedWorkout.status:type_name -> runthread.v1.PlannedWorkoutStatus
+	27, // 30: runthread.v1.PlannedWorkout.intensity:type_name -> runthread.v1.IntensityTarget
+	7,  // 31: runthread.v1.ImportedActivity.type:type_name -> runthread.v1.ActivityType
+	33, // 32: runthread.v1.ImportedActivity.started_at:type_name -> google.protobuf.Timestamp
+	8,  // 33: runthread.v1.WorkoutMatch.status:type_name -> runthread.v1.WorkoutMatchStatus
+	9,  // 34: runthread.v1.WorkoutMatch.confidence:type_name -> runthread.v1.MatchConfidence
+	10, // 35: runthread.v1.WorkoutMatch.matched_by:type_name -> runthread.v1.MatchSource
+	33, // 36: runthread.v1.WorkoutMatch.matched_at:type_name -> google.protobuf.Timestamp
+	11, // 37: runthread.v1.WorkoutResult.outcome:type_name -> runthread.v1.WorkoutOutcome
+	33, // 38: runthread.v1.WorkoutResult.completed_at:type_name -> google.protobuf.Timestamp
+	12, // 39: runthread.v1.AdaptationEvent.type:type_name -> runthread.v1.AdaptationType
+	33, // 40: runthread.v1.AdaptationEvent.created_at:type_name -> google.protobuf.Timestamp
+	32, // 41: runthread.v1.AdaptationEvent.changes:type_name -> runthread.v1.PlanChange
+	13, // 42: runthread.v1.PlanChange.type:type_name -> runthread.v1.PlanChangeType
+	14, // 43: runthread.v1.RunthreadService.GetCurrentPlanWeek:input_type -> runthread.v1.GetCurrentPlanWeekRequest
+	18, // 44: runthread.v1.RunthreadService.GetProviderConnectionStatus:input_type -> runthread.v1.GetProviderConnectionStatusRequest
+	20, // 45: runthread.v1.RunthreadService.StartProviderConnection:input_type -> runthread.v1.StartProviderConnectionRequest
+	16, // 46: runthread.v1.RunthreadService.CompleteImportedActivity:input_type -> runthread.v1.CompleteImportedActivityRequest
+	15, // 47: runthread.v1.RunthreadService.GetCurrentPlanWeek:output_type -> runthread.v1.GetCurrentPlanWeekResponse
+	19, // 48: runthread.v1.RunthreadService.GetProviderConnectionStatus:output_type -> runthread.v1.GetProviderConnectionStatusResponse
+	21, // 49: runthread.v1.RunthreadService.StartProviderConnection:output_type -> runthread.v1.StartProviderConnectionResponse
+	17, // 50: runthread.v1.RunthreadService.CompleteImportedActivity:output_type -> runthread.v1.CompleteImportedActivityResponse
+	47, // [47:51] is the sub-list for method output_type
+	43, // [43:47] is the sub-list for method input_type
+	43, // [43:43] is the sub-list for extension type_name
+	43, // [43:43] is the sub-list for extension extendee
+	0,  // [0:43] is the sub-list for field type_name
 }
 
 func init() { file_runthread_v1_runthread_proto_init() }
@@ -2222,8 +2742,8 @@ func file_runthread_v1_runthread_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_runthread_v1_runthread_proto_rawDesc), len(file_runthread_v1_runthread_proto_rawDesc)),
-			NumEnums:      12,
-			NumMessages:   14,
+			NumEnums:      14,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

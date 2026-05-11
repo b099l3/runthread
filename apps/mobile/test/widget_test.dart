@@ -4,6 +4,7 @@ import 'package:runthread_mobile/src/api/runthread_api.dart';
 import 'package:runthread_mobile/src/app.dart';
 import 'package:runthread_mobile/src/demo/demo_fallback_api.dart';
 import 'package:runthread_mobile/src/models/plan_week.dart';
+import 'package:runthread_mobile/src/models/provider_connection.dart';
 
 void main() {
   testWidgets('weekly plan screen renders seven workouts', (tester) async {
@@ -26,6 +27,9 @@ void main() {
     expect(find.text('Strength'), findsOneWidget);
     expect(find.textContaining('5.0 km'), findsOneWidget);
     expect(find.textContaining('8.0 km'), findsOneWidget);
+    expect(find.text('Garmin'), findsOneWidget);
+    expect(find.text('Not connected'), findsOneWidget);
+    expect(find.text('Connect Garmin'), findsOneWidget);
     expect(find.text('Plan changes'), findsOneWidget);
     expect(find.text('No adaptations this week.'), findsOneWidget);
   });
@@ -65,14 +69,106 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('This week'), findsOneWidget);
-    expect(find.text('Demo data · local backend not ready'), findsOneWidget);
+    expect(find.textContaining('Demo data ·'), findsOneWidget);
     expect(find.text('Plan unavailable'), findsNothing);
 
     await tester.tap(find.byIcon(Icons.history_outlined));
     await tester.pumpAndSettle();
 
     expect(find.text('History'), findsWidgets);
-    expect(find.text('Demo data · local backend not ready'), findsOneWidget);
+    expect(find.textContaining('Demo data ·'), findsOneWidget);
+  });
+
+  testWidgets('garmin connection entry point is read only', (tester) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      RunthreadApp(
+        api: FakeRunthreadApi(currentPlanWeek: testCurrentPlanWeek()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Garmin'), findsOneWidget);
+    expect(
+      find.text(
+        'Run completion will come from imported Garmin activity once provider access is ready.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Disabled for now'), findsOneWidget);
+
+    final connectButton = tester.widget<OutlinedButton>(
+      find.widgetWithText(OutlinedButton, 'Connect Garmin'),
+    );
+    expect(connectButton.onPressed, isNull);
+  });
+
+  testWidgets('garmin connection entry point shows pending status', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      RunthreadApp(
+        api: FakeRunthreadApi(
+          currentPlanWeek: testCurrentPlanWeek(),
+          providerConnection: testProviderConnectionStatus(
+            ProviderConnectionStatus.pending,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Garmin'), findsOneWidget);
+    expect(find.text('Pending'), findsOneWidget);
+    expect(
+      find.text(
+        'Connection has started. Garmin authorization remains disabled until provider access is ready.',
+      ),
+      findsOneWidget,
+    );
+    final connectButton = tester.widget<OutlinedButton>(
+      find.widgetWithText(OutlinedButton, 'Connect Garmin'),
+    );
+    expect(connectButton.onPressed, isNull);
+  });
+
+  testWidgets('garmin connection entry point shows connected status', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      RunthreadApp(
+        api: FakeRunthreadApi(
+          currentPlanWeek: testCurrentPlanWeek(),
+          providerConnection: testProviderConnectionStatus(
+            ProviderConnectionStatus.connected,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Garmin'), findsOneWidget);
+    expect(find.text('Connected'), findsOneWidget);
+    expect(
+      find.text(
+        'Runthread is ready to receive imported Garmin activity for workout completion.',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('tapping a workout opens detail view', (tester) async {
@@ -238,12 +334,84 @@ void main() {
     expect(find.text('You underperformed the prior workout.'), findsOneWidget);
     expect(find.text('Reduced Sunday long run by 10%.'), findsOneWidget);
   });
+
+  test('current plan week parses protobuf JSON int64 strings', () {
+    final currentPlanWeek = CurrentPlanWeek.fromJson({
+      'planWeek': {
+        'id': 'week-1',
+        'startsOn': '2026-06-01',
+        'focus': 'WEEK_FOCUS_BASE',
+        'workouts': [
+          {
+            'id': 'workout-1',
+            'scheduledFor': '2026-06-02',
+            'type': 'WORKOUT_TYPE_EASY',
+            'status': 'PLANNED_WORKOUT_STATUS_SCHEDULED',
+            'targetDistanceMeters': 5000,
+            'targetDurationSeconds': '1800',
+            'intensity': {'kind': 'easy', 'description': ''},
+            'notes': 'Easy run.',
+          },
+        ],
+      },
+      'importedActivities': [
+        {
+          'id': 'activity-1',
+          'type': 'ACTIVITY_TYPE_RUN',
+          'startedAt': '2026-06-02T08:00:00Z',
+          'durationSeconds': '1800',
+          'distanceMeters': 5000,
+        },
+      ],
+      'workoutMatches': const [],
+      'workoutResults': [
+        {
+          'id': 'result-1',
+          'plannedWorkoutId': 'workout-1',
+          'importedActivityId': 'activity-1',
+          'outcome': 'WORKOUT_OUTCOME_COMPLETED_AS_PLANNED',
+          'distanceMeters': 5000,
+          'durationSeconds': '1800',
+        },
+      ],
+      'adaptationEvents': const [],
+    });
+
+    expect(
+      currentPlanWeek.planWeek.workouts.single.targetDurationSeconds,
+      1800,
+    );
+    expect(currentPlanWeek.importedActivities.single.durationSeconds, 1800);
+    expect(currentPlanWeek.workoutResults.single.durationSeconds, 1800);
+  });
+
+  test('provider connection status parses protobuf JSON', () {
+    final status = ProviderConnectionStatusView.fromJson({
+      'hasConnection': true,
+      'connection': {
+        'id': 'connection-1',
+        'athleteId': 'athlete-1',
+        'provider': 'PROVIDER_GARMIN',
+        'status': 'PROVIDER_CONNECTION_STATUS_CONNECTED',
+        'lastError': '',
+      },
+    });
+
+    expect(status.hasConnection, isTrue);
+    expect(status.providerLabel, 'Garmin');
+    expect(status.statusLabel, 'Connected');
+  });
 }
 
 class FakeRunthreadApi implements RunthreadApi {
-  const FakeRunthreadApi({this.currentPlanWeek, this.error});
+  const FakeRunthreadApi({
+    this.currentPlanWeek,
+    this.providerConnection,
+    this.error,
+  });
 
   final CurrentPlanWeek? currentPlanWeek;
+  final ProviderConnectionStatusView? providerConnection;
   final Object? error;
 
   @override
@@ -253,6 +421,29 @@ class FakeRunthreadApi implements RunthreadApi {
     }
     return currentPlanWeek!;
   }
+
+  @override
+  Future<ProviderConnectionStatusView> getProviderConnectionStatus() async {
+    if (error != null) {
+      throw error!;
+    }
+    return providerConnection ?? ProviderConnectionStatusView.notConnected();
+  }
+}
+
+ProviderConnectionStatusView testProviderConnectionStatus(
+  ProviderConnectionStatus status,
+) {
+  return ProviderConnectionStatusView(
+    hasConnection: true,
+    connection: ProviderConnection(
+      id: 'connection-1',
+      athleteId: 'athlete-1',
+      provider: Provider.garmin,
+      status: status,
+      lastError: '',
+    ),
+  );
 }
 
 CurrentPlanWeek testCurrentPlanWeek() {

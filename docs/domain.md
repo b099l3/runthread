@@ -91,7 +91,7 @@ Stage 3 adds deterministic workout flow helpers for marking planned workouts com
 
 ## ImportedActivity
 
-A completed activity imported from a provider such as Garmin and normalised into Runthread's own model. It should contain provider-neutral data such as start time, duration, distance, pace, heart rate summaries, and activity type.
+A completed activity imported from a provider such as Strava, Garmin, COROS, or Apple Health and normalised into Runthread's own model. It should contain provider-neutral data such as start time, duration, distance, pace, heart rate summaries, and activity type.
 
 Initial Go model:
 
@@ -107,6 +107,37 @@ Initial Go model:
 Validation checks required IDs, recognised activity type, required start time, positive duration, and non-negative distance, pace, and heart rate.
 
 Provider names, provider activity IDs, raw payloads, and OAuth details are intentionally not part of this core domain type. Those belong in integration and persistence boundaries.
+
+Core planning, matching, workout result, and adaptation logic should use `ImportedActivity` only. Provider-specific payloads should stay in provider packages. Strava, Garmin, COROS, and Apple Health should all map into this same internal activity model before core domain logic sees the activity.
+
+## ActivityProvider
+
+An adapter boundary for a provider that can supply activity data. An `ActivityProvider` owns provider-specific parsing, validation, field mapping, and policy details, then emits provider-neutral imported activity data.
+
+Initial Go interface shape:
+
+- `ProviderName() string`
+- `NormaliseActivity(ctx context.Context, payload []byte) (domain.ImportedActivity, error)`
+
+Provider implementations must not make planning or adaptation decisions. They should only connect provider data to the provider-neutral import pipeline.
+
+## ProviderConnection
+
+The athlete-owned connection between Runthread and an external provider account.
+
+It belongs outside the core domain package because it includes integration state, provider account identifiers, token references, sync status, cursors, errors, and timestamps. The backend owns provider connections, token exchange, token refresh, disconnect handling, and provider API access.
+
+## ActivityImportJob
+
+A backend unit of work that imports activities for a provider connection. It may represent historical backfill, webhook-triggered import, polling, manual retry, or a local mock import.
+
+It should carry provider connection identity, job type, cursor or time-window metadata, status, retry/error state, and timestamps. It should call a provider adapter and store provider import state without exposing provider payloads to planning or adaptation logic.
+
+## ProviderWebhookEvent
+
+A provider-facing event received by the backend, such as a Strava activity create/update/delete event or a future Garmin delivery event.
+
+Webhook events should be authenticated according to provider rules, stored or logged for idempotency and audit as allowed by provider terms, and converted into import jobs or provider activity updates. Core domain logic should not consume webhook payloads directly.
 
 ## WorkoutMatch
 

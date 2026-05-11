@@ -3,9 +3,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/plan_week.dart';
+import '../models/provider_connection.dart';
 
 abstract interface class RunthreadApi {
   Future<CurrentPlanWeek> getCurrentPlanWeek();
+  Future<ProviderConnectionStatusView> getProviderConnectionStatus();
 }
 
 class HttpRunthreadApi implements RunthreadApi {
@@ -45,6 +47,33 @@ class HttpRunthreadApi implements RunthreadApi {
 
     final decoded = jsonDecode(response.body) as Map<String, dynamic>;
     return CurrentPlanWeek.fromJson(decoded);
+  }
+
+  @override
+  Future<ProviderConnectionStatusView> getProviderConnectionStatus() async {
+    final endpoint = baseUrl.resolve(
+      '/runthread.v1.RunthreadService/GetProviderConnectionStatus',
+    );
+    final response = await _client.post(
+      endpoint,
+      headers: const {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode(const {
+        'athleteId': _demoAthleteId,
+        'provider': 'PROVIDER_GARMIN',
+      }),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw RunthreadApiException(
+        'Backend returned ${response.statusCode} for Garmin connection status.',
+      );
+    }
+
+    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    return ProviderConnectionStatusView.fromJson(decoded);
   }
 }
 

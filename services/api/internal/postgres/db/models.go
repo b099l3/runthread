@@ -6,6 +6,7 @@ package db
 
 import (
 	"database/sql"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -79,6 +80,61 @@ type PlannedWorkout struct {
 	Notes                 sql.NullString  `json:"notes"`
 	CreatedAt             time.Time       `json:"created_at"`
 	UpdatedAt             time.Time       `json:"updated_at"`
+}
+
+type ProviderActivity struct {
+	ID                   uuid.UUID      `json:"id"`
+	ProviderConnectionID uuid.UUID      `json:"provider_connection_id"`
+	AthleteID            uuid.UUID      `json:"athlete_id"`
+	ImportedActivityID   uuid.NullUUID  `json:"imported_activity_id"`
+	Provider             string         `json:"provider"`
+	ProviderActivityID   string         `json:"provider_activity_id"`
+	ProviderActivityType sql.NullString `json:"provider_activity_type"`
+	StartedAt            sql.NullTime   `json:"started_at"`
+	Status               string         `json:"status"`
+	FirstSeenAt          time.Time      `json:"first_seen_at"`
+	LastSyncedAt         sql.NullTime   `json:"last_synced_at"`
+	LastError            sql.NullString `json:"last_error"`
+	CreatedAt            time.Time      `json:"created_at"`
+	UpdatedAt            time.Time      `json:"updated_at"`
+}
+
+type ProviderActivityPayload struct {
+	ID                 uuid.UUID       `json:"id"`
+	ProviderActivityID uuid.UUID       `json:"provider_activity_id"`
+	Payload            json.RawMessage `json:"payload"`
+	PayloadKind        string          `json:"payload_kind"`
+	ReceivedAt         time.Time       `json:"received_at"`
+}
+
+type ProviderConnection struct {
+	ID               uuid.UUID      `json:"id"`
+	AthleteID        uuid.UUID      `json:"athlete_id"`
+	Provider         string         `json:"provider"`
+	ProviderUserID   sql.NullString `json:"provider_user_id"`
+	Status           string         `json:"status"`
+	ConnectedAt      sql.NullTime   `json:"connected_at"`
+	DisconnectedAt   sql.NullTime   `json:"disconnected_at"`
+	LastSyncAt       sql.NullTime   `json:"last_sync_at"`
+	LastImportCursor sql.NullString `json:"last_import_cursor"`
+	TokenReference   sql.NullString `json:"token_reference"`
+	TokenExpiresAt   sql.NullTime   `json:"token_expires_at"`
+	LastError        sql.NullString `json:"last_error"`
+	CreatedAt        time.Time      `json:"created_at"`
+	UpdatedAt        time.Time      `json:"updated_at"`
+}
+
+type ProviderImportEvent struct {
+	ID                   uuid.UUID      `json:"id"`
+	ProviderConnectionID uuid.NullUUID  `json:"provider_connection_id"`
+	ProviderActivityID   uuid.NullUUID  `json:"provider_activity_id"`
+	Provider             string         `json:"provider"`
+	EventType            string         `json:"event_type"`
+	DeliveryID           sql.NullString `json:"delivery_id"`
+	Status               string         `json:"status"`
+	ReceivedAt           time.Time      `json:"received_at"`
+	ProcessedAt          sql.NullTime   `json:"processed_at"`
+	Error                sql.NullString `json:"error"`
 }
 
 type TrainingGoal struct {

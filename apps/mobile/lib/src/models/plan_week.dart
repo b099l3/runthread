@@ -158,8 +158,8 @@ class ImportedActivity {
       id: json['id'] as String? ?? '',
       type: _labelForEnum(json['type']),
       startedAt: _parseOptionalDateTime(json['startedAt']),
-      durationSeconds: (json['durationSeconds'] as num?)?.toInt() ?? 0,
-      distanceMeters: (json['distanceMeters'] as num?)?.toDouble() ?? 0,
+      durationSeconds: _intFromJson(json['durationSeconds']),
+      distanceMeters: _doubleFromJson(json['distanceMeters']),
     );
   }
 
@@ -223,8 +223,8 @@ class WorkoutResult {
       plannedWorkoutId: json['plannedWorkoutId'] as String? ?? '',
       importedActivityId: json['importedActivityId'] as String? ?? '',
       outcome: _labelForEnum(json['outcome']),
-      distanceMeters: (json['distanceMeters'] as num?)?.toDouble() ?? 0,
-      durationSeconds: (json['durationSeconds'] as num?)?.toInt() ?? 0,
+      distanceMeters: _doubleFromJson(json['distanceMeters']),
+      durationSeconds: _intFromJson(json['durationSeconds']),
     );
   }
 }
@@ -271,10 +271,8 @@ class PlannedWorkout {
       scheduledFor: DateTime.parse(json['scheduledFor'] as String),
       type: _labelForEnum(json['type']),
       status: _labelForEnum(json['status']),
-      targetDistanceMeters:
-          (json['targetDistanceMeters'] as num?)?.toDouble() ?? 0,
-      targetDurationSeconds:
-          (json['targetDurationSeconds'] as num?)?.toInt() ?? 0,
+      targetDistanceMeters: _doubleFromJson(json['targetDistanceMeters']),
+      targetDurationSeconds: _intFromJson(json['targetDurationSeconds']),
       intensity: IntensityTarget.fromJson(
         json['intensity'] is Map<String, dynamic>
             ? json['intensity'] as Map<String, dynamic>
@@ -367,6 +365,26 @@ DateTime? _parseOptionalDateTime(Object? value) {
     return null;
   }
   return DateTime.tryParse(value);
+}
+
+double _doubleFromJson(Object? value) {
+  if (value is num) {
+    return value.toDouble();
+  }
+  if (value is String) {
+    return double.tryParse(value) ?? 0;
+  }
+  return 0;
+}
+
+int _intFromJson(Object? value) {
+  if (value is num) {
+    return value.toInt();
+  }
+  if (value is String) {
+    return int.tryParse(value) ?? 0;
+  }
+  return 0;
 }
 
 String _durationLabel(int seconds) {

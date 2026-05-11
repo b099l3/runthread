@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'api/runthread_api.dart';
+import 'demo/demo_fallback_api.dart';
 import 'history_view.dart';
 import 'models/plan_week.dart';
+import 'models/provider_connection.dart';
 import 'workout_detail_screen.dart';
 
 class PlanWeekScreen extends StatefulWidget {
@@ -15,19 +17,34 @@ class PlanWeekScreen extends StatefulWidget {
 }
 
 class _PlanWeekScreenState extends State<PlanWeekScreen> {
-  late Future<CurrentPlanWeek> _planWeek;
+  late Future<_PlanWeekScreenData> _screenData;
   int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _planWeek = widget.api.getCurrentPlanWeek();
+    _screenData = _loadScreenData();
   }
 
   void _reload() {
     setState(() {
-      _planWeek = widget.api.getCurrentPlanWeek();
+      _screenData = _loadScreenData();
     });
+  }
+
+  Future<_PlanWeekScreenData> _loadScreenData() async {
+    final currentPlanWeek = await widget.api.getCurrentPlanWeek();
+    final providerConnection = await widget.api
+        .getProviderConnectionStatus()
+        .catchError(
+          (_) => ProviderConnectionStatusView.notConnected(
+            statusUnavailable: true,
+          ),
+        );
+    return _PlanWeekScreenData(
+      currentPlanWeek: currentPlanWeek,
+      providerConnection: providerConnection,
+    );
   }
 
   @override
@@ -64,8 +81,8 @@ class _PlanWeekScreenState extends State<PlanWeekScreen> {
         ],
       ),
       body: SafeArea(
-        child: FutureBuilder<CurrentPlanWeek>(
-          future: _planWeek,
+        child: FutureBuilder<_PlanWeekScreenData>(
+          future: _screenData,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const _LoadingState();
@@ -76,16 +93,16 @@ class _PlanWeekScreenState extends State<PlanWeekScreen> {
                 onRetry: _reload,
               );
             }
-            final currentPlanWeek = snapshot.data;
-            if (currentPlanWeek == null) {
+            final screenData = snapshot.data;
+            if (screenData == null) {
               return _ErrorState(
                 message: 'No plan week was returned.',
                 onRetry: _reload,
               );
             }
             return _selectedIndex == 0
-                ? _PlanWeekContent(currentPlanWeek: currentPlanWeek)
-                : HistoryView(currentPlanWeek: currentPlanWeek);
+                ? _PlanWeekContent(screenData: screenData)
+                : HistoryView(currentPlanWeek: screenData.currentPlanWeek);
           },
         ),
       ),
@@ -93,14 +110,25 @@ class _PlanWeekScreenState extends State<PlanWeekScreen> {
   }
 }
 
-class _PlanWeekContent extends StatelessWidget {
-  const _PlanWeekContent({required this.currentPlanWeek});
+class _PlanWeekScreenData {
+  const _PlanWeekScreenData({
+    required this.currentPlanWeek,
+    required this.providerConnection,
+  });
 
   final CurrentPlanWeek currentPlanWeek;
+  final ProviderConnectionStatusView providerConnection;
+}
+
+class _PlanWeekContent extends StatelessWidget {
+  const _PlanWeekContent({required this.screenData});
+
+  final _PlanWeekScreenData screenData;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final currentPlanWeek = screenData.currentPlanWeek;
     final planWeek = currentPlanWeek.planWeek;
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
@@ -123,6 +151,10 @@ class _PlanWeekContent extends StatelessWidget {
           const _DemoNotice(),
         ],
         const SizedBox(height: 16),
+        _ProviderConnectionSummary(
+          providerConnection: screenData.providerConnection,
+        ),
+        const SizedBox(height: 12),
         _AdaptationSummary(events: currentPlanWeek.adaptationEvents),
         const SizedBox(height: 20),
         for (final workout in planWeek.workouts) ...[
@@ -143,6 +175,91 @@ class _PlanWeekContent extends StatelessWidget {
           const SizedBox(height: 10),
         ],
       ],
+    );
+  }
+}
+
+class _ProviderConnectionSummary extends StatelessWidget {
+  const _ProviderConnectionSummary({required this.providerConnection});
+
+  final ProviderConnectionStatusView providerConnection;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.watch_outlined,
+                  size: 20,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    providerConnection.providerLabel,
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: colorScheme.surfaceContainerHighest,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    child: Text(
+                      providerConnection.statusLabel,
+                      style: textTheme.labelMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              providerConnection.description,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: null,
+                  icon: const Icon(Icons.link),
+                  label: const Text('Connect Garmin'),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Disabled for now',
+                    style: textTheme.labelMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -253,6 +370,7 @@ class _DemoNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final fallbackError = DemoFallbackRunthreadApi.lastFallbackError;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.secondaryContainer,
@@ -270,7 +388,9 @@ class _DemoNotice extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Demo data · local backend not ready',
+                fallbackError == null
+                    ? 'Demo data · local backend not ready'
+                    : 'Demo data · ${fallbackError.toString()}',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   color: colorScheme.onSecondaryContainer,
                   fontWeight: FontWeight.w700,

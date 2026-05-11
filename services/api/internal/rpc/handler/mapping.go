@@ -7,6 +7,7 @@ import (
 
 	"github.com/runthread/runthread/services/api/internal/app"
 	"github.com/runthread/runthread/services/api/internal/domain"
+	"github.com/runthread/runthread/services/api/internal/repository"
 	rpcv1 "github.com/runthread/runthread/services/api/internal/rpc/runthread/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -60,6 +61,51 @@ func getCurrentPlanWeekResponseFromApp(response app.GetCurrentPlanWeekResponse) 
 	}
 }
 
+func getProviderConnectionStatusRequestToApp(req *rpcv1.GetProviderConnectionStatusRequest) (app.GetProviderConnectionStatusRequest, error) {
+	if req == nil {
+		return app.GetProviderConnectionStatusRequest{}, fmt.Errorf("request is required")
+	}
+
+	// TODO: Replace request-supplied athlete ID with authenticated user context
+	// once auth exists.
+	return app.GetProviderConnectionStatusRequest{
+		AthleteID:            req.GetAthleteId(),
+		Provider:             providerToApp(req.GetProvider()),
+		ProviderConnectionID: req.GetProviderConnectionId(),
+	}, nil
+}
+
+func getProviderConnectionStatusResponseFromApp(response app.GetProviderConnectionStatusResponse) *rpcv1.GetProviderConnectionStatusResponse {
+	return &rpcv1.GetProviderConnectionStatusResponse{
+		Connection:    providerConnectionFromRepository(response.Connection),
+		HasConnection: response.HasConnection,
+	}
+}
+
+func startProviderConnectionRequestToApp(req *rpcv1.StartProviderConnectionRequest) (app.StartProviderConnectionRequest, error) {
+	if req == nil {
+		return app.StartProviderConnectionRequest{}, fmt.Errorf("request is required")
+	}
+
+	// TODO: Replace request-supplied athlete ID with authenticated user context
+	// once auth exists. redirect_uri remains placeholder-shaped until Garmin's
+	// actual connection flow is validated.
+	return app.StartProviderConnectionRequest{
+		AthleteID:   req.GetAthleteId(),
+		Provider:    providerToApp(req.GetProvider()),
+		RedirectURI: req.GetRedirectUri(),
+	}, nil
+}
+
+func startProviderConnectionResponseFromApp(response app.StartProviderConnectionResponse) *rpcv1.StartProviderConnectionResponse {
+	return &rpcv1.StartProviderConnectionResponse{
+		Connection:       providerConnectionFromRepository(response.Connection),
+		AuthorizationUrl: response.AuthorizationURL,
+		State:            response.State,
+		OauthReady:       response.OAuthReady,
+	}
+}
+
 func completeImportedActivityRequestToApp(req *rpcv1.CompleteImportedActivityRequest) (app.CompleteImportedActivityRequest, error) {
 	if req == nil {
 		return app.CompleteImportedActivityRequest{}, fmt.Errorf("request is required")
@@ -95,6 +141,23 @@ func completeImportedActivityRequestToApp(req *rpcv1.CompleteImportedActivityReq
 		ResultID: req.GetResultId(),
 		Outcome:  workoutOutcomeToDomain(req.GetOutcome()),
 	}, nil
+}
+
+func providerConnectionFromRepository(connection repository.ProviderConnection) *rpcv1.ProviderConnection {
+	if connection.ID == "" {
+		return nil
+	}
+	return &rpcv1.ProviderConnection{
+		Id:             connection.ID,
+		AthleteId:      connection.AthleteID,
+		Provider:       providerFromRepository(connection.Provider),
+		ProviderUserId: connection.ProviderUserID,
+		Status:         providerConnectionStatusFromRepository(connection.Status),
+		ConnectedAt:    optionalTimestamp(connection.ConnectedAt),
+		DisconnectedAt: optionalTimestamp(connection.DisconnectedAt),
+		LastSyncAt:     optionalTimestamp(connection.LastSyncAt),
+		LastError:      connection.LastError,
+	}
 }
 
 func completeImportedActivityResponseFromApp(response app.CompleteImportedActivityResponse) *rpcv1.CompleteImportedActivityResponse {
@@ -261,6 +324,13 @@ func adaptationEventFromDomain(event *domain.AdaptationEvent) *rpcv1.AdaptationE
 		CreatedAt: timestamppb.New(event.CreatedAt),
 		Changes:   changes,
 	}
+}
+
+func optionalTimestamp(value time.Time) *timestamppb.Timestamp {
+	if value.IsZero() {
+		return nil
+	}
+	return timestamppb.New(value)
 }
 
 func parseDate(value string, field string) (time.Time, error) {

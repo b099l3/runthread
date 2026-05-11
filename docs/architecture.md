@@ -2,7 +2,7 @@
 
 Runthread uses a Flutter mobile app, a Go backend, ConnectRPC APIs, and Postgres.
 
-The backend owns domain logic. The mobile app presents the plan, workout state, imported activities, adaptations, and explanations. External provider integrations are isolated so provider-specific details do not leak into the core training model.
+The backend owns domain logic and provider integrations. The mobile app presents the plan, workout state, imported activities, adaptations, and explanations. External provider integrations are isolated so provider-specific details do not leak into the core training model.
 
 ## Intended Architecture
 
@@ -20,7 +20,7 @@ The backend owns domain logic. The mobile app presents the plan, workout state, 
           | Domain logic         |
           | Planning engine      |
           | Adaptation engine    |
-          | Garmin integration   |
+          | Provider integrations|
           +----------+-----------+
                      |
                      | sqlc queries
@@ -30,14 +30,27 @@ The backend owns domain logic. The mobile app presents the plan, workout state, 
           +----------------------+
 
           +----------------------+
-          | Garmin Provider APIs |
+          | Provider APIs        |
+          | Strava / Garmin     |
           +----------+-----------+
                      |
                      | Imports activities
                      v
           +----------------------+
-          | Garmin integration   |
+          | Provider Integration |
           +----------------------+
+```
+
+Provider-neutral import flow:
+
+```text
+Flutter App
+  -> Connect Strava / Garmin
+  -> Go API
+  -> Provider Integration Layer
+  -> Normalised ImportedActivity
+  -> Workout Matching
+  -> Adaptation Engine
 ```
 
 ## Components
@@ -48,6 +61,10 @@ The initial Flutter MVP lives in `apps/mobile`. It starts on the weekly plan vie
 
 The Go backend owns the domain model, planning rules, workout matching, adaptation rules, and integration workflows.
 
+Provider integrations are represented behind a provider-neutral `ActivityProvider` concept. A provider adapter knows how to validate provider-specific payloads and normalise them into `domain.ImportedActivity`. Strava, Garmin, COROS, Apple Health, or any later provider should feed the same internal import pipeline once connected.
+
+The backend owns OAuth and import execution. The mobile app may start a connect flow and open the provider authorization URL, but the backend exchanges authorization codes, stores token references securely, refreshes tokens, imports activities, handles provider webhooks, and records import state. Mobile should not receive refresh tokens or call provider APIs directly.
+
 The initial API contract lives in `services/api/proto/runthread/v1/runthread.proto`. It defines a provider-neutral `RunthreadService` with `CompleteImportedActivity` for the current backend core-loop application service boundary and `GetCurrentPlanWeek` as the first read-side contract for the Flutter MVP. Buf generation config lives in `services/api/buf.yaml` and `services/api/buf.gen.yaml`, and generated Go protobuf/ConnectRPC code lives under `services/api/internal/rpc`.
 
 `services/api/internal/rpc/handler` contains the first thin ConnectRPC handler. It maps protobuf messages to domain/app types explicitly, calls application services, and maps responses back to protobuf. It does not own training decisions, persistence selection, auth, or provider-specific logic.
@@ -56,7 +73,7 @@ The current `CompleteImportedActivity` request is deliberately wider than the ev
 
 The current `GetCurrentPlanWeek` request is also transitional. It accepts request-supplied `plan_week_id`, `athlete_id`, optional `goal_id`, and `target_week_date` so the Flutter MVP has a small provider-neutral read shape before auth and current-plan lookup exist. The response groups the current plan week with related imported activities, matches, workout results, and adaptation events that the first MVP screens are expected to render.
 
-The mobile app currently sends demo `athlete-1` and `goal-1` identifiers to the local backend. If those records are missing or the backend is unavailable, the app falls back to local demo plan data from `lib/src/demo` and shows a visible demo-data notice. Onboarding, auth-backed athlete selection, and seeded beta data remain future work.
+The mobile app currently sends demo `athlete-1` and `goal-1` identifiers to the local backend. Local in-memory API startup seeds those records so the Flutter MVP can verify server/app communication without manual setup. If those records are missing in a non-demo backend or the backend is unavailable, the app falls back to local demo plan data from `lib/src/demo` and shows a visible demo-data notice. Onboarding, auth-backed athlete selection, and seeded beta data remain future work.
 
 Application service boundaries sit between future RPC handlers and the domain packages. These services should expose use-case shaped methods and keep handlers thin. The first boundary is `services/api/internal/app/CoreLoopService`, which wraps the test-only core-loop harness and persists successful outputs through repository interfaces without adding ConnectRPC.
 
@@ -70,13 +87,13 @@ Repository interfaces define the persistence boundary. The initial in-memory sto
 
 Server startup reads configuration from the environment through `services/api/internal/config`. `RUNTHREAD_SERVER_ADDR` controls the HTTP bind address and defaults to `:8080`. `services/api/internal/startup` composes storage: it uses `repository.NewInMemoryStore()` when `DATABASE_URL` is empty, and opens a Postgres `database/sql` handle for `postgres.NewStore(db)` when `DATABASE_URL` is set. The server constructs application services from the selected store, exposes `/healthz`, and mounts the first ConnectRPC handler.
 
-Postgres will store app data, including athletes, goals, plans, planned workouts, imported activities, workout matches, workout results, provider connections, and adaptation events.
+Postgres will store app data, including athletes, goals, plans, planned workouts, imported activities, workout matches, workout results, provider connections, provider import jobs/events, webhook events, token references, and adaptation events.
 
 The initial Postgres persistence model is planned in `docs/persistence.md`. Plain SQL migrations exist under `services/api/internal/postgres/migrations`, and `scripts/db` contains minimal local up/down wrappers. sqlc config, query files, and generated database code exist for the current core tables. sqlc-backed repositories and a Postgres store composition layer exist for athlete profiles, training goals, plan weeks, planned workouts, imported activities, workout matches, workout results, and adaptation events. Versioned migration tooling, live database integration tests, auth, and additional implemented ConnectRPC methods remain deferred.
 
 sqlc will generate typed Go data access code from SQL queries when the persistence layer is introduced.
 
-Garmin integration imports activities and normalises them into Runthread's `ImportedActivity` model before the core domain evaluates them.
+Provider integrations import activities and normalise them into Runthread's `ImportedActivity` model before the core domain evaluates them. Strava is the first likely real MVP provider; Garmin direct integration remains a later premium/direct integration target. Provider-specific identifiers, payloads, scopes, webhook signatures, rate-limit handling, and token details should stay in provider packages and persistence boundaries.
 
 AI can be used to draft explanations or copy. It must not decide workouts, plan changes, training load, or adaptation rules.
 
@@ -93,4 +110,4 @@ Likely early RPC methods:
 - Match an imported activity to a planned workout.
 - Fetch adaptation events and user-facing explanation data once persistence exists.
 
-Database persistence, auth, provider connections, and real Garmin import should be added before these become production API endpoints.
+Database persistence, auth, provider connections, and real provider import should be added before these become production API endpoints.

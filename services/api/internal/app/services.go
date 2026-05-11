@@ -11,6 +11,7 @@ import (
 type Services struct {
 	CoreLoop        CoreLoopService
 	CurrentPlanWeek CurrentPlanWeekService
+	ProviderConnect ProviderConnectionService
 }
 
 func NewServices(store repository.Store) (Services, error) {
@@ -18,7 +19,7 @@ func NewServices(store repository.Store) (Services, error) {
 		return Services{}, fmt.Errorf("repository store is required")
 	}
 
-	return Services{
+	services := Services{
 		CoreLoop: CoreLoopService{
 			Runner: coreloop.NewService(),
 			Store:  store,
@@ -27,5 +28,9 @@ func NewServices(store repository.Store) (Services, error) {
 			Store:   store,
 			Planner: planning.NewWeeklyPlanner(),
 		},
-	}, nil
+	}
+	if providerStore, ok := store.(repository.ProviderStore); ok {
+		services.ProviderConnect = ProviderConnectionService{Store: providerStore}
+	}
+	return services, nil
 }

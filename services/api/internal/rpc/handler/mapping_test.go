@@ -4,7 +4,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/runthread/runthread/services/api/internal/app"
 	"github.com/runthread/runthread/services/api/internal/domain"
+	"github.com/runthread/runthread/services/api/internal/repository"
 	rpcv1 "github.com/runthread/runthread/services/api/internal/rpc/runthread/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -96,6 +98,69 @@ func TestGetCurrentPlanWeekRequestToApp(t *testing.T) {
 	}
 	if appRequest.TargetWeekDate.Format(dateLayout) != "2026-06-03" {
 		t.Fatalf("TargetWeekDate = %s, want 2026-06-03", appRequest.TargetWeekDate.Format(dateLayout))
+	}
+}
+
+func TestProviderConnectionRequestsToApp(t *testing.T) {
+	statusRequest, err := getProviderConnectionStatusRequestToApp(&rpcv1.GetProviderConnectionStatusRequest{
+		AthleteId:            "athlete-1",
+		Provider:             rpcv1.Provider_PROVIDER_GARMIN,
+		ProviderConnectionId: "connection-1",
+	})
+	if err != nil {
+		t.Fatalf("getProviderConnectionStatusRequestToApp returned error: %v", err)
+	}
+	if statusRequest.AthleteID != "athlete-1" {
+		t.Fatalf("AthleteID = %q, want athlete-1", statusRequest.AthleteID)
+	}
+	if statusRequest.Provider != app.ProviderGarmin {
+		t.Fatalf("Provider = %q, want garmin", statusRequest.Provider)
+	}
+	if statusRequest.ProviderConnectionID != "connection-1" {
+		t.Fatalf("ProviderConnectionID = %q, want connection-1", statusRequest.ProviderConnectionID)
+	}
+
+	startRequest, err := startProviderConnectionRequestToApp(&rpcv1.StartProviderConnectionRequest{
+		AthleteId:   "athlete-1",
+		Provider:    rpcv1.Provider_PROVIDER_GARMIN,
+		RedirectUri: "runthread://provider/garmin/callback",
+	})
+	if err != nil {
+		t.Fatalf("startProviderConnectionRequestToApp returned error: %v", err)
+	}
+	if startRequest.Provider != app.ProviderGarmin {
+		t.Fatalf("Provider = %q, want garmin", startRequest.Provider)
+	}
+	if startRequest.RedirectURI != "runthread://provider/garmin/callback" {
+		t.Fatalf("RedirectURI = %q, want callback", startRequest.RedirectURI)
+	}
+}
+
+func TestProviderConnectionResponseFromApp(t *testing.T) {
+	connectedAt := time.Date(2026, time.June, 5, 9, 0, 0, 0, time.UTC)
+	response := getProviderConnectionStatusResponseFromApp(app.GetProviderConnectionStatusResponse{
+		Connection: repository.ProviderConnection{
+			ID:             "connection-1",
+			AthleteID:      "athlete-1",
+			Provider:       app.ProviderGarmin,
+			ProviderUserID: "garmin-user-1",
+			Status:         repository.ProviderConnectionStatusConnected,
+			ConnectedAt:    connectedAt,
+		},
+		HasConnection: true,
+	})
+
+	if !response.GetHasConnection() {
+		t.Fatal("expected has connection")
+	}
+	if response.GetConnection().GetProvider() != rpcv1.Provider_PROVIDER_GARMIN {
+		t.Fatalf("provider = %s, want garmin", response.GetConnection().GetProvider())
+	}
+	if response.GetConnection().GetStatus() != rpcv1.ProviderConnectionStatus_PROVIDER_CONNECTION_STATUS_CONNECTED {
+		t.Fatalf("status = %s, want connected", response.GetConnection().GetStatus())
+	}
+	if response.GetConnection().GetConnectedAt().AsTime() != connectedAt {
+		t.Fatalf("connected at = %s, want %s", response.GetConnection().GetConnectedAt().AsTime(), connectedAt)
 	}
 }
 

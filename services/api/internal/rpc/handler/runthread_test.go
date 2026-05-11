@@ -99,6 +99,71 @@ func TestRunthreadServiceGetCurrentPlanWeek(t *testing.T) {
 	}
 }
 
+func TestRunthreadServiceStartProviderConnection(t *testing.T) {
+	services, err := app.NewServices(repository.NewInMemoryStore())
+	if err != nil {
+		t.Fatalf("NewServices returned error: %v", err)
+	}
+	handler := NewRunthreadService(services)
+
+	response, err := handler.StartProviderConnection(context.Background(), connect.NewRequest(&rpcv1.StartProviderConnectionRequest{
+		AthleteId:   "athlete-1",
+		Provider:    rpcv1.Provider_PROVIDER_GARMIN,
+		RedirectUri: "runthread://provider/garmin/callback",
+	}))
+	if err != nil {
+		t.Fatalf("StartProviderConnection returned error: %v", err)
+	}
+
+	if response.Msg.GetConnection().GetAthleteId() != "athlete-1" {
+		t.Fatalf("connection athlete id = %q, want athlete-1", response.Msg.GetConnection().GetAthleteId())
+	}
+	if response.Msg.GetConnection().GetStatus() != rpcv1.ProviderConnectionStatus_PROVIDER_CONNECTION_STATUS_PENDING {
+		t.Fatalf("connection status = %s, want pending", response.Msg.GetConnection().GetStatus())
+	}
+	if response.Msg.GetOauthReady() {
+		t.Fatal("expected oauth ready false")
+	}
+	if response.Msg.GetAuthorizationUrl() != "" {
+		t.Fatalf("authorization url = %q, want empty", response.Msg.GetAuthorizationUrl())
+	}
+}
+
+func TestRunthreadServiceGetProviderConnectionStatus(t *testing.T) {
+	ctx := context.Background()
+	store := repository.NewInMemoryStore()
+	if err := store.SaveProviderConnection(ctx, repository.ProviderConnection{
+		ID:             "connection-1",
+		AthleteID:      "athlete-1",
+		Provider:       app.ProviderGarmin,
+		ProviderUserID: "garmin-user-1",
+		Status:         repository.ProviderConnectionStatusConnected,
+		ConnectedAt:    testDate(2026, time.June, 5),
+	}); err != nil {
+		t.Fatalf("SaveProviderConnection returned error: %v", err)
+	}
+	services, err := app.NewServices(store)
+	if err != nil {
+		t.Fatalf("NewServices returned error: %v", err)
+	}
+	handler := NewRunthreadService(services)
+
+	response, err := handler.GetProviderConnectionStatus(ctx, connect.NewRequest(&rpcv1.GetProviderConnectionStatusRequest{
+		AthleteId: "athlete-1",
+		Provider:  rpcv1.Provider_PROVIDER_GARMIN,
+	}))
+	if err != nil {
+		t.Fatalf("GetProviderConnectionStatus returned error: %v", err)
+	}
+
+	if !response.Msg.GetHasConnection() {
+		t.Fatal("expected has connection")
+	}
+	if response.Msg.GetConnection().GetId() != "connection-1" {
+		t.Fatalf("connection id = %q, want connection-1", response.Msg.GetConnection().GetId())
+	}
+}
+
 func TestRunthreadServiceCompleteImportedActivityRejectsBadRequest(t *testing.T) {
 	services, err := app.NewServices(repository.NewInMemoryStore())
 	if err != nil {

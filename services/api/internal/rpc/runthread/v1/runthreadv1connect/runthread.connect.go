@@ -36,6 +36,12 @@ const (
 	// RunthreadServiceGetCurrentPlanWeekProcedure is the fully-qualified name of the RunthreadService's
 	// GetCurrentPlanWeek RPC.
 	RunthreadServiceGetCurrentPlanWeekProcedure = "/runthread.v1.RunthreadService/GetCurrentPlanWeek"
+	// RunthreadServiceGetProviderConnectionStatusProcedure is the fully-qualified name of the
+	// RunthreadService's GetProviderConnectionStatus RPC.
+	RunthreadServiceGetProviderConnectionStatusProcedure = "/runthread.v1.RunthreadService/GetProviderConnectionStatus"
+	// RunthreadServiceStartProviderConnectionProcedure is the fully-qualified name of the
+	// RunthreadService's StartProviderConnection RPC.
+	RunthreadServiceStartProviderConnectionProcedure = "/runthread.v1.RunthreadService/StartProviderConnection"
 	// RunthreadServiceCompleteImportedActivityProcedure is the fully-qualified name of the
 	// RunthreadService's CompleteImportedActivity RPC.
 	RunthreadServiceCompleteImportedActivityProcedure = "/runthread.v1.RunthreadService/CompleteImportedActivity"
@@ -44,6 +50,8 @@ const (
 // RunthreadServiceClient is a client for the runthread.v1.RunthreadService service.
 type RunthreadServiceClient interface {
 	GetCurrentPlanWeek(context.Context, *connect.Request[v1.GetCurrentPlanWeekRequest]) (*connect.Response[v1.GetCurrentPlanWeekResponse], error)
+	GetProviderConnectionStatus(context.Context, *connect.Request[v1.GetProviderConnectionStatusRequest]) (*connect.Response[v1.GetProviderConnectionStatusResponse], error)
+	StartProviderConnection(context.Context, *connect.Request[v1.StartProviderConnectionRequest]) (*connect.Response[v1.StartProviderConnectionResponse], error)
 	CompleteImportedActivity(context.Context, *connect.Request[v1.CompleteImportedActivityRequest]) (*connect.Response[v1.CompleteImportedActivityResponse], error)
 }
 
@@ -64,6 +72,18 @@ func NewRunthreadServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(runthreadServiceMethods.ByName("GetCurrentPlanWeek")),
 			connect.WithClientOptions(opts...),
 		),
+		getProviderConnectionStatus: connect.NewClient[v1.GetProviderConnectionStatusRequest, v1.GetProviderConnectionStatusResponse](
+			httpClient,
+			baseURL+RunthreadServiceGetProviderConnectionStatusProcedure,
+			connect.WithSchema(runthreadServiceMethods.ByName("GetProviderConnectionStatus")),
+			connect.WithClientOptions(opts...),
+		),
+		startProviderConnection: connect.NewClient[v1.StartProviderConnectionRequest, v1.StartProviderConnectionResponse](
+			httpClient,
+			baseURL+RunthreadServiceStartProviderConnectionProcedure,
+			connect.WithSchema(runthreadServiceMethods.ByName("StartProviderConnection")),
+			connect.WithClientOptions(opts...),
+		),
 		completeImportedActivity: connect.NewClient[v1.CompleteImportedActivityRequest, v1.CompleteImportedActivityResponse](
 			httpClient,
 			baseURL+RunthreadServiceCompleteImportedActivityProcedure,
@@ -75,13 +95,25 @@ func NewRunthreadServiceClient(httpClient connect.HTTPClient, baseURL string, op
 
 // runthreadServiceClient implements RunthreadServiceClient.
 type runthreadServiceClient struct {
-	getCurrentPlanWeek       *connect.Client[v1.GetCurrentPlanWeekRequest, v1.GetCurrentPlanWeekResponse]
-	completeImportedActivity *connect.Client[v1.CompleteImportedActivityRequest, v1.CompleteImportedActivityResponse]
+	getCurrentPlanWeek          *connect.Client[v1.GetCurrentPlanWeekRequest, v1.GetCurrentPlanWeekResponse]
+	getProviderConnectionStatus *connect.Client[v1.GetProviderConnectionStatusRequest, v1.GetProviderConnectionStatusResponse]
+	startProviderConnection     *connect.Client[v1.StartProviderConnectionRequest, v1.StartProviderConnectionResponse]
+	completeImportedActivity    *connect.Client[v1.CompleteImportedActivityRequest, v1.CompleteImportedActivityResponse]
 }
 
 // GetCurrentPlanWeek calls runthread.v1.RunthreadService.GetCurrentPlanWeek.
 func (c *runthreadServiceClient) GetCurrentPlanWeek(ctx context.Context, req *connect.Request[v1.GetCurrentPlanWeekRequest]) (*connect.Response[v1.GetCurrentPlanWeekResponse], error) {
 	return c.getCurrentPlanWeek.CallUnary(ctx, req)
+}
+
+// GetProviderConnectionStatus calls runthread.v1.RunthreadService.GetProviderConnectionStatus.
+func (c *runthreadServiceClient) GetProviderConnectionStatus(ctx context.Context, req *connect.Request[v1.GetProviderConnectionStatusRequest]) (*connect.Response[v1.GetProviderConnectionStatusResponse], error) {
+	return c.getProviderConnectionStatus.CallUnary(ctx, req)
+}
+
+// StartProviderConnection calls runthread.v1.RunthreadService.StartProviderConnection.
+func (c *runthreadServiceClient) StartProviderConnection(ctx context.Context, req *connect.Request[v1.StartProviderConnectionRequest]) (*connect.Response[v1.StartProviderConnectionResponse], error) {
+	return c.startProviderConnection.CallUnary(ctx, req)
 }
 
 // CompleteImportedActivity calls runthread.v1.RunthreadService.CompleteImportedActivity.
@@ -92,6 +124,8 @@ func (c *runthreadServiceClient) CompleteImportedActivity(ctx context.Context, r
 // RunthreadServiceHandler is an implementation of the runthread.v1.RunthreadService service.
 type RunthreadServiceHandler interface {
 	GetCurrentPlanWeek(context.Context, *connect.Request[v1.GetCurrentPlanWeekRequest]) (*connect.Response[v1.GetCurrentPlanWeekResponse], error)
+	GetProviderConnectionStatus(context.Context, *connect.Request[v1.GetProviderConnectionStatusRequest]) (*connect.Response[v1.GetProviderConnectionStatusResponse], error)
+	StartProviderConnection(context.Context, *connect.Request[v1.StartProviderConnectionRequest]) (*connect.Response[v1.StartProviderConnectionResponse], error)
 	CompleteImportedActivity(context.Context, *connect.Request[v1.CompleteImportedActivityRequest]) (*connect.Response[v1.CompleteImportedActivityResponse], error)
 }
 
@@ -108,6 +142,18 @@ func NewRunthreadServiceHandler(svc RunthreadServiceHandler, opts ...connect.Han
 		connect.WithSchema(runthreadServiceMethods.ByName("GetCurrentPlanWeek")),
 		connect.WithHandlerOptions(opts...),
 	)
+	runthreadServiceGetProviderConnectionStatusHandler := connect.NewUnaryHandler(
+		RunthreadServiceGetProviderConnectionStatusProcedure,
+		svc.GetProviderConnectionStatus,
+		connect.WithSchema(runthreadServiceMethods.ByName("GetProviderConnectionStatus")),
+		connect.WithHandlerOptions(opts...),
+	)
+	runthreadServiceStartProviderConnectionHandler := connect.NewUnaryHandler(
+		RunthreadServiceStartProviderConnectionProcedure,
+		svc.StartProviderConnection,
+		connect.WithSchema(runthreadServiceMethods.ByName("StartProviderConnection")),
+		connect.WithHandlerOptions(opts...),
+	)
 	runthreadServiceCompleteImportedActivityHandler := connect.NewUnaryHandler(
 		RunthreadServiceCompleteImportedActivityProcedure,
 		svc.CompleteImportedActivity,
@@ -118,6 +164,10 @@ func NewRunthreadServiceHandler(svc RunthreadServiceHandler, opts ...connect.Han
 		switch r.URL.Path {
 		case RunthreadServiceGetCurrentPlanWeekProcedure:
 			runthreadServiceGetCurrentPlanWeekHandler.ServeHTTP(w, r)
+		case RunthreadServiceGetProviderConnectionStatusProcedure:
+			runthreadServiceGetProviderConnectionStatusHandler.ServeHTTP(w, r)
+		case RunthreadServiceStartProviderConnectionProcedure:
+			runthreadServiceStartProviderConnectionHandler.ServeHTTP(w, r)
 		case RunthreadServiceCompleteImportedActivityProcedure:
 			runthreadServiceCompleteImportedActivityHandler.ServeHTTP(w, r)
 		default:
@@ -131,6 +181,14 @@ type UnimplementedRunthreadServiceHandler struct{}
 
 func (UnimplementedRunthreadServiceHandler) GetCurrentPlanWeek(context.Context, *connect.Request[v1.GetCurrentPlanWeekRequest]) (*connect.Response[v1.GetCurrentPlanWeekResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("runthread.v1.RunthreadService.GetCurrentPlanWeek is not implemented"))
+}
+
+func (UnimplementedRunthreadServiceHandler) GetProviderConnectionStatus(context.Context, *connect.Request[v1.GetProviderConnectionStatusRequest]) (*connect.Response[v1.GetProviderConnectionStatusResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("runthread.v1.RunthreadService.GetProviderConnectionStatus is not implemented"))
+}
+
+func (UnimplementedRunthreadServiceHandler) StartProviderConnection(context.Context, *connect.Request[v1.StartProviderConnectionRequest]) (*connect.Response[v1.StartProviderConnectionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("runthread.v1.RunthreadService.StartProviderConnection is not implemented"))
 }
 
 func (UnimplementedRunthreadServiceHandler) CompleteImportedActivity(context.Context, *connect.Request[v1.CompleteImportedActivityRequest]) (*connect.Response[v1.CompleteImportedActivityResponse], error) {

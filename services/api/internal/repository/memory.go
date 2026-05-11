@@ -20,9 +20,15 @@ type InMemoryStore struct {
 	workoutMatches     map[string]domain.WorkoutMatch
 	workoutResults     map[string]domain.WorkoutResult
 	adaptationEvents   map[string]domain.AdaptationEvent
+
+	providerConnections      map[string]ProviderConnection
+	providerActivities       map[string]ProviderActivity
+	providerActivityPayloads map[string]ProviderActivityPayload
+	providerImportEvents     map[string]ProviderImportEvent
 }
 
 var _ Store = (*InMemoryStore)(nil)
+var _ ProviderStore = (*InMemoryStore)(nil)
 var _ CurrentPlanWeekReader = (*InMemoryStore)(nil)
 
 func NewInMemoryStore() *InMemoryStore {
@@ -35,6 +41,11 @@ func NewInMemoryStore() *InMemoryStore {
 		workoutMatches:     make(map[string]domain.WorkoutMatch),
 		workoutResults:     make(map[string]domain.WorkoutResult),
 		adaptationEvents:   make(map[string]domain.AdaptationEvent),
+
+		providerConnections:      make(map[string]ProviderConnection),
+		providerActivities:       make(map[string]ProviderActivity),
+		providerActivityPayloads: make(map[string]ProviderActivityPayload),
+		providerImportEvents:     make(map[string]ProviderImportEvent),
 	}
 }
 
@@ -262,6 +273,245 @@ func (s *InMemoryStore) GetAdaptationEvent(ctx context.Context, id string) (doma
 	return cloneAdaptationEvent(event), nil
 }
 
+func (s *InMemoryStore) SaveProviderConnection(ctx context.Context, connection ProviderConnection) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := connection.Validate(); err != nil {
+		return fmt.Errorf("invalid provider connection: %w", err)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.providerConnections[connection.ID] = connection
+	return nil
+}
+
+func (s *InMemoryStore) GetProviderConnection(ctx context.Context, id string) (ProviderConnection, error) {
+	if err := ctx.Err(); err != nil {
+		return ProviderConnection{}, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	connection, ok := s.providerConnections[id]
+	if !ok {
+		return ProviderConnection{}, ErrNotFound
+	}
+	return connection, nil
+}
+
+func (s *InMemoryStore) ListProviderConnectionsByAthlete(ctx context.Context, athleteID string) ([]ProviderConnection, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var connections []ProviderConnection
+	for _, connection := range s.providerConnections {
+		if connection.AthleteID == athleteID {
+			connections = append(connections, connection)
+		}
+	}
+	return connections, nil
+}
+
+func (s *InMemoryStore) ListProviderConnectionsByStatus(ctx context.Context, status ProviderConnectionStatus) ([]ProviderConnection, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var connections []ProviderConnection
+	for _, connection := range s.providerConnections {
+		if connection.Status == status {
+			connections = append(connections, connection)
+		}
+	}
+	return connections, nil
+}
+
+func (s *InMemoryStore) SaveProviderActivity(ctx context.Context, activity ProviderActivity) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := activity.Validate(); err != nil {
+		return fmt.Errorf("invalid provider activity: %w", err)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.providerActivities[activity.ID] = activity
+	return nil
+}
+
+func (s *InMemoryStore) GetProviderActivity(ctx context.Context, id string) (ProviderActivity, error) {
+	if err := ctx.Err(); err != nil {
+		return ProviderActivity{}, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	activity, ok := s.providerActivities[id]
+	if !ok {
+		return ProviderActivity{}, ErrNotFound
+	}
+	return activity, nil
+}
+
+func (s *InMemoryStore) GetProviderActivityByProviderID(ctx context.Context, providerConnectionID string, providerActivityID string) (ProviderActivity, error) {
+	if err := ctx.Err(); err != nil {
+		return ProviderActivity{}, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, activity := range s.providerActivities {
+		if activity.ProviderConnectionID == providerConnectionID && activity.ProviderActivityID == providerActivityID {
+			return activity, nil
+		}
+	}
+	return ProviderActivity{}, ErrNotFound
+}
+
+func (s *InMemoryStore) ListProviderActivitiesByAthlete(ctx context.Context, athleteID string) ([]ProviderActivity, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var activities []ProviderActivity
+	for _, activity := range s.providerActivities {
+		if activity.AthleteID == athleteID {
+			activities = append(activities, activity)
+		}
+	}
+	return activities, nil
+}
+
+func (s *InMemoryStore) ListProviderActivitiesByStatus(ctx context.Context, status ProviderActivityStatus) ([]ProviderActivity, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var activities []ProviderActivity
+	for _, activity := range s.providerActivities {
+		if activity.Status == status {
+			activities = append(activities, activity)
+		}
+	}
+	return activities, nil
+}
+
+func (s *InMemoryStore) SaveProviderActivityPayload(ctx context.Context, payload ProviderActivityPayload) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := payload.Validate(); err != nil {
+		return fmt.Errorf("invalid provider activity payload: %w", err)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.providerActivityPayloads[payload.ID] = cloneProviderActivityPayload(payload)
+	return nil
+}
+
+func (s *InMemoryStore) GetProviderActivityPayload(ctx context.Context, id string) (ProviderActivityPayload, error) {
+	if err := ctx.Err(); err != nil {
+		return ProviderActivityPayload{}, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	payload, ok := s.providerActivityPayloads[id]
+	if !ok {
+		return ProviderActivityPayload{}, ErrNotFound
+	}
+	return cloneProviderActivityPayload(payload), nil
+}
+
+func (s *InMemoryStore) ListProviderActivityPayloads(ctx context.Context, providerActivityID string) ([]ProviderActivityPayload, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var payloads []ProviderActivityPayload
+	for _, payload := range s.providerActivityPayloads {
+		if payload.ProviderActivityID == providerActivityID {
+			payloads = append(payloads, cloneProviderActivityPayload(payload))
+		}
+	}
+	return payloads, nil
+}
+
+func (s *InMemoryStore) SaveProviderImportEvent(ctx context.Context, event ProviderImportEvent) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := event.Validate(); err != nil {
+		return fmt.Errorf("invalid provider import event: %w", err)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.providerImportEvents[event.ID] = event
+	return nil
+}
+
+func (s *InMemoryStore) GetProviderImportEvent(ctx context.Context, id string) (ProviderImportEvent, error) {
+	if err := ctx.Err(); err != nil {
+		return ProviderImportEvent{}, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	event, ok := s.providerImportEvents[id]
+	if !ok {
+		return ProviderImportEvent{}, ErrNotFound
+	}
+	return event, nil
+}
+
+func (s *InMemoryStore) ListProviderImportEventsByConnection(ctx context.Context, providerConnectionID string) ([]ProviderImportEvent, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var events []ProviderImportEvent
+	for _, event := range s.providerImportEvents {
+		if event.ProviderConnectionID == providerConnectionID {
+			events = append(events, event)
+		}
+	}
+	return events, nil
+}
+
+func (s *InMemoryStore) ListProviderImportEventsByStatus(ctx context.Context, status ProviderImportEventStatus) ([]ProviderImportEvent, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var events []ProviderImportEvent
+	for _, event := range s.providerImportEvents {
+		if event.Status == status {
+			events = append(events, event)
+		}
+	}
+	return events, nil
+}
+
 func (s *InMemoryStore) GetCurrentPlanWeekSnapshot(ctx context.Context, query CurrentPlanWeekQuery) (PlanWeekSnapshot, error) {
 	if err := ctx.Err(); err != nil {
 		return PlanWeekSnapshot{}, err
@@ -349,6 +599,11 @@ func clonePlanWeek(week domain.PlanWeek) domain.PlanWeek {
 func cloneAdaptationEvent(event domain.AdaptationEvent) domain.AdaptationEvent {
 	event.Changes = append([]domain.PlanChange(nil), event.Changes...)
 	return event
+}
+
+func cloneProviderActivityPayload(payload ProviderActivityPayload) ProviderActivityPayload {
+	payload.Payload = append([]byte(nil), payload.Payload...)
+	return payload
 }
 
 func startOfWeek(date time.Time) time.Time {

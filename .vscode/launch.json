@@ -1,0 +1,59 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Runthread API",
+      "type": "node-terminal",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "command": "cd services/api && RUNTHREAD_SERVER_ADDR=127.0.0.1:8080 asdf exec go run ./cmd/server"
+    },
+    {
+      "name": "Runthread Mobile",
+      "type": "node-terminal",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "command": "adb reverse tcp:8080 tcp:8080 || true; cd apps/mobile && asdf exec flutter run --dart-define=RUNTHREAD_API_BASE_URL=http://localhost:8080"
+    },
+    {
+      "name": "Runthread API Debug",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/services/api/cmd/server",
+      "cwd": "${workspaceFolder}/services/api",
+      "env": {
+        "RUNTHREAD_SERVER_ADDR": "127.0.0.1:8080"
+      }
+    },
+    {
+      "name": "Runthread Mobile Debug",
+      "type": "dart",
+      "request": "launch",
+      "program": "${workspaceFolder}/apps/mobile/lib/main.dart",
+      "cwd": "${workspaceFolder}/apps/mobile",
+      "flutterMode": "debug",
+      "toolArgs": [
+        "--dart-define=RUNTHREAD_API_BASE_URL=http://localhost:8080"
+      ]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Runthread API + Mobile",
+      "configurations": [
+        "Runthread API",
+        "Runthread Mobile"
+      ],
+      "stopAll": true
+    },
+    {
+      "name": "Runthread API + Mobile Debug",
+      "configurations": [
+        "Runthread API Debug",
+        "Runthread Mobile Debug"
+      ],
+      "stopAll": true
+    }
+  ]
+}

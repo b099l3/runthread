@@ -50,6 +50,34 @@ type AdaptationEventRepository interface {
 	GetAdaptationEvent(context.Context, string) (domain.AdaptationEvent, error)
 }
 
+type ProviderConnectionRepository interface {
+	SaveProviderConnection(context.Context, ProviderConnection) error
+	GetProviderConnection(context.Context, string) (ProviderConnection, error)
+	ListProviderConnectionsByAthlete(context.Context, string) ([]ProviderConnection, error)
+	ListProviderConnectionsByStatus(context.Context, ProviderConnectionStatus) ([]ProviderConnection, error)
+}
+
+type ProviderActivityRepository interface {
+	SaveProviderActivity(context.Context, ProviderActivity) error
+	GetProviderActivity(context.Context, string) (ProviderActivity, error)
+	GetProviderActivityByProviderID(context.Context, string, string) (ProviderActivity, error)
+	ListProviderActivitiesByAthlete(context.Context, string) ([]ProviderActivity, error)
+	ListProviderActivitiesByStatus(context.Context, ProviderActivityStatus) ([]ProviderActivity, error)
+}
+
+type ProviderActivityPayloadRepository interface {
+	SaveProviderActivityPayload(context.Context, ProviderActivityPayload) error
+	GetProviderActivityPayload(context.Context, string) (ProviderActivityPayload, error)
+	ListProviderActivityPayloads(context.Context, string) ([]ProviderActivityPayload, error)
+}
+
+type ProviderImportEventRepository interface {
+	SaveProviderImportEvent(context.Context, ProviderImportEvent) error
+	GetProviderImportEvent(context.Context, string) (ProviderImportEvent, error)
+	ListProviderImportEventsByConnection(context.Context, string) ([]ProviderImportEvent, error)
+	ListProviderImportEventsByStatus(context.Context, ProviderImportEventStatus) ([]ProviderImportEvent, error)
+}
+
 type Store interface {
 	AthleteProfileRepository
 	TrainingGoalRepository
@@ -59,6 +87,13 @@ type Store interface {
 	WorkoutMatchRepository
 	WorkoutResultRepository
 	AdaptationEventRepository
+}
+
+type ProviderStore interface {
+	ProviderConnectionRepository
+	ProviderActivityRepository
+	ProviderActivityPayloadRepository
+	ProviderImportEventRepository
 }
 
 type PlanWeekSnapshot struct {

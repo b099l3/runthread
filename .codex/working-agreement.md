@@ -9,9 +9,14 @@ Future Codex sessions should work this way:
 - Update docs when decisions, domain concepts, or architecture change.
 - Do not build unrelated future features.
 - Prefer simple, deterministic, testable domain logic.
-- Keep Garmin-specific details out of core domain logic.
+- When adding provider integrations, start with docs and mock data before real OAuth, webhooks, polling, or API calls.
+- Avoid provider-specific leakage into domain, planning, matching, and adaptation packages.
+- Keep OAuth code exchange, token storage, token refresh, webhook handling, and provider API calls backend-only.
+- Keep provider integrations small and testable, with provider-specific parsing isolated in provider packages.
+- Respect provider API terms, rate limits, privacy rules, retention rules, and user data access boundaries.
 - Keep AI out of core training decisions.
-- Assume real Garmin access must be validated or applied for before Stage 8.
+- Do not send Strava-derived activity data to AI prompts or use it for model training.
+- Assume real Garmin access must be validated or applied for before direct Garmin implementation.
 - Ask for clarification only when blocked.
 - Leave clear TODOs for later stages when useful.
 - Verify changes with focused tests or compile checks before finishing.

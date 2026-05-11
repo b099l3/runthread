@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/runthread/runthread/services/api/internal/domain"
+	"github.com/runthread/runthread/services/api/internal/repository"
 	rpcv1 "github.com/runthread/runthread/services/api/internal/rpc/runthread/v1"
 )
 
@@ -30,6 +31,41 @@ func goalTypeToDomain(value rpcv1.GoalType) domain.GoalType {
 		return domain.GoalTypeTime
 	default:
 		return ""
+	}
+}
+
+func providerToApp(value rpcv1.Provider) string {
+	switch value {
+	case rpcv1.Provider_PROVIDER_GARMIN:
+		return "garmin"
+	default:
+		return ""
+	}
+}
+
+func providerFromRepository(value string) rpcv1.Provider {
+	switch value {
+	case "garmin":
+		return rpcv1.Provider_PROVIDER_GARMIN
+	default:
+		return rpcv1.Provider_PROVIDER_UNSPECIFIED
+	}
+}
+
+func providerConnectionStatusFromRepository(value repository.ProviderConnectionStatus) rpcv1.ProviderConnectionStatus {
+	switch value {
+	case repository.ProviderConnectionStatusPending:
+		return rpcv1.ProviderConnectionStatus_PROVIDER_CONNECTION_STATUS_PENDING
+	case repository.ProviderConnectionStatusConnected:
+		return rpcv1.ProviderConnectionStatus_PROVIDER_CONNECTION_STATUS_CONNECTED
+	case repository.ProviderConnectionStatusSyncing:
+		return rpcv1.ProviderConnectionStatus_PROVIDER_CONNECTION_STATUS_SYNCING
+	case repository.ProviderConnectionStatusError:
+		return rpcv1.ProviderConnectionStatus_PROVIDER_CONNECTION_STATUS_ERROR
+	case repository.ProviderConnectionStatusDisconnected:
+		return rpcv1.ProviderConnectionStatus_PROVIDER_CONNECTION_STATUS_DISCONNECTED
+	default:
+		return rpcv1.ProviderConnectionStatus_PROVIDER_CONNECTION_STATUS_UNSPECIFIED
 	}
 }
 

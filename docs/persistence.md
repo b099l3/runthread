@@ -1,6 +1,6 @@
 # Persistence Model
 
-This document explains the initial Postgres persistence model. Plain SQL migrations live in `services/api/internal/postgres/migrations`, and small local scripts in `scripts/db` can apply or roll them back against Docker Compose Postgres. sqlc query files, generated database code, sqlc-backed repositories, and a Postgres store composition layer now exist for the current core repository interfaces. The app service still uses repository interfaces and production server startup has not been wired to Postgres.
+This document explains the initial Postgres persistence model. Plain SQL migrations live in `services/api/internal/postgres/migrations`, and small local scripts in `scripts/db` can apply or roll them back against Docker Compose Postgres. sqlc query files, generated database code, sqlc-backed repositories, and Postgres store composition layers now exist for the current core and provider repository interfaces. The app service still uses core repository interfaces, and provider storage has not been wired into app services or production server startup.
 
 The first database model should store Runthread's provider-neutral domain concepts. Provider-specific Garmin identifiers, OAuth tokens, raw payloads, webhook metadata, and provider connection state should stay out of these core tables until the real Garmin integration stage.
 
@@ -275,7 +275,7 @@ Notes:
 
 ## Provider-Specific Data
 
-Keep these out of the core tables for now:
+Keep these out of the core tables:
 
 - Garmin OAuth tokens.
 - Garmin user/account identifiers.
@@ -285,14 +285,177 @@ Keep these out of the core tables for now:
 - Garmin import retry state.
 - Provider-specific activity type strings.
 
-These should wait until real Garmin integration:
+Stage 8 should add provider-specific tables outside the core domain model:
 
 - `provider_connections`
 - `provider_activities`
 - `provider_activity_payloads`
-- webhook delivery/audit tables
+- `provider_import_events`, if webhook/polling delivery audit is needed immediately
 - token encryption and rotation strategy
 - Garmin API access validation and terms review
+
+## provider_connections
+
+Stores integration concept: athlete-owned provider account connection.
+
+Primary key:
+
+- `id uuid primary key`
+
+Important foreign keys:
+
+- `athlete_id uuid not null references athlete_profiles(id)`
+
+Important columns:
+
+- `provider text not null`
+- `provider_user_id text`
+- `status text not null`
+- `connected_at timestamptz`
+- `disconnected_at timestamptz`
+- `last_sync_at timestamptz`
+- `last_import_cursor text`
+- `token_reference text`
+- `token_expires_at timestamptz`
+- `last_error text`
+- `created_at timestamptz not null`
+- `updated_at timestamptz not null`
+
+Notes:
+
+- `provider` is initially `garmin`, but this table should also work for Coros and Apple Watch later.
+- `provider_user_id` is the external account identifier if Garmin provides one.
+- `token_reference` should not store plaintext tokens. It should point to encrypted token material or a secret store if token storage is allowed by provider terms.
+- `last_import_cursor` is optional and depends on Garmin's supported sync model.
+- Suggested statuses: `pending`, `connected`, `syncing`, `error`, `disconnected`.
+- A later migration should add an index on `(athlete_id, provider)` and a uniqueness rule for active connections once reconnect behavior is decided.
+
+## provider_activities
+
+Stores integration concept: provider-specific activity record mapped to a provider-neutral `ImportedActivity`.
+
+Primary key:
+
+- `id uuid primary key`
+
+Important foreign keys:
+
+- `provider_connection_id uuid not null references provider_connections(id)`
+- `athlete_id uuid not null references athlete_profiles(id)`
+- `imported_activity_id uuid references imported_activities(id)`
+
+Important columns:
+
+- `provider text not null`
+- `provider_activity_id text not null`
+- `provider_activity_type text`
+- `started_at timestamptz`
+- `status text not null`
+- `first_seen_at timestamptz not null`
+- `last_synced_at timestamptz`
+- `last_error text`
+- `created_at timestamptz not null`
+- `updated_at timestamptz not null`
+
+Notes:
+
+- This table is where Garmin activity IDs and Garmin activity type strings belong.
+- `imported_activity_id` is nullable until normalisation succeeds or when an activity is intentionally ignored.
+- Suggested statuses: `received`, `normalised`, `ignored`, `failed`.
+- Add a uniqueness constraint on `(provider_connection_id, provider_activity_id)` for idempotency.
+- Add indexes on `(athlete_id, started_at)` and `imported_activity_id`.
+
+## provider_activity_payloads
+
+Stores integration concept: optional raw provider payload snapshot for audit/debugging.
+
+Primary key:
+
+- `id uuid primary key`
+
+Important foreign keys:
+
+- `provider_activity_id uuid not null references provider_activities(id) on delete cascade`
+
+Important columns:
+
+- `payload jsonb not null`
+- `payload_kind text not null`
+- `received_at timestamptz not null`
+
+Notes:
+
+- Store raw Garmin payloads only if allowed by Garmin terms and Runthread privacy policy.
+- This table should be optional for early development if provider terms or privacy review are not complete.
+- Avoid reading raw payloads from core domain logic. Normalisation should happen in the Garmin integration package.
+
+## provider_import_events
+
+Stores integration concept: optional webhook/polling delivery audit.
+
+Primary key:
+
+- `id uuid primary key`
+
+Important foreign keys:
+
+- `provider_connection_id uuid references provider_connections(id)`
+- `provider_activity_id uuid references provider_activities(id)`
+
+Important columns:
+
+- `provider text not null`
+- `event_type text not null`
+- `delivery_id text`
+- `status text not null`
+- `received_at timestamptz not null`
+- `processed_at timestamptz`
+- `error text`
+
+Notes:
+
+- Add this table if Garmin uses webhook deliveries, or if polling/sync attempts need auditability from the start.
+- `delivery_id` should hold provider webhook delivery identifiers when available.
+- Suggested statuses: `received`, `processed`, `ignored`, `failed`.
+- This is not a core training table.
+
+## Provider Migration
+
+The provider-specific migration creates provider tables without changing core domain tables:
+
+- `000002_provider_connections.up.sql`
+- `000002_provider_connections.down.sql`
+
+Contents:
+
+- create `provider_connections`
+- create `provider_activities`
+- create `provider_activity_payloads`
+- create `provider_import_events`
+- add uniqueness on `(provider_connection_id, provider_activity_id)`
+- add indexes for athlete/provider lookup, activity import idempotency, and import status scans
+- add a unique delivery index for provider import events when a provider delivery ID exists
+
+Do not add Garmin-specific columns to `imported_activities`.
+
+## Provider sqlc Scaffold
+
+Initial sqlc query files exist for provider persistence tables:
+
+- `provider_connections.sql`
+- `provider_activities.sql`
+- `provider_activity_payloads.sql`
+- `provider_import_events.sql`
+
+The queries intentionally cover only small read/write operations needed for future repositories: create, update where useful, get by ID, and list by athlete/status/connection. sqlc-backed provider repositories and a provider-only Postgres store composition layer now exist in `services/api/internal/postgres`, with tests that do not require a live database. Provider app-service and server-startup wiring remain deferred.
+
+Provider persistence models and repository interfaces live in `services/api/internal/repository`, not in the core domain package. The in-memory store implements those interfaces for tests and early integration design. This keeps provider connection state outside `domain.ImportedActivity` and the core training logic.
+
+Type mapping notes:
+
+- `provider_activity_payloads.payload jsonb` generates `encoding/json.RawMessage`.
+- Nullable provider timestamps and optional text fields use `database/sql` nullable types.
+- Nullable provider import event foreign keys use `uuid.NullUUID`; connection-scoped list queries use a non-null UUID argument.
 
 ## Migration Notes For Later
 

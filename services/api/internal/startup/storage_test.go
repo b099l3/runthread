@@ -1,6 +1,7 @@
 package startup
 
 import (
+	"context"
 	"testing"
 
 	"github.com/runthread/runthread/services/api/internal/config"
@@ -21,6 +22,12 @@ func TestComposeStorageDefaultsToInMemoryStore(t *testing.T) {
 	}
 	if _, ok := storage.Store.(*repository.InMemoryStore); !ok {
 		t.Fatalf("Store type = %T, want *repository.InMemoryStore", storage.Store)
+	}
+	if _, err := storage.Store.GetAthleteProfile(context.Background(), DemoAthleteID); err != nil {
+		t.Fatalf("demo athlete profile was not seeded: %v", err)
+	}
+	if _, err := storage.Store.GetTrainingGoal(context.Background(), DemoGoalID); err != nil {
+		t.Fatalf("demo training goal was not seeded: %v", err)
 	}
 	if storage.Cleanup == nil {
 		t.Fatal("Cleanup is nil")

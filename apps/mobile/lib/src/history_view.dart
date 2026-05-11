@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'demo/demo_fallback_api.dart';
 import 'models/plan_week.dart';
 
 class HistoryView extends StatelessWidget {
@@ -44,6 +45,7 @@ class _DemoNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final fallbackError = DemoFallbackRunthreadApi.lastFallbackError;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.secondaryContainer,
@@ -61,7 +63,9 @@ class _DemoNotice extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Demo data · local backend not ready',
+                fallbackError == null
+                    ? 'Demo data · local backend not ready'
+                    : 'Demo data · ${fallbackError.toString()}',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   color: colorScheme.onSecondaryContainer,
                   fontWeight: FontWeight.w700,
