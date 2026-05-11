@@ -658,6 +658,8 @@ Notes:
 
 ## Stage 11: Strava Activity Backfill/Import
 
+Status: Completed backend-only skeleton pass.
+
 Acceptance criteria:
 
 - Backend can enqueue or run an initial Strava backfill/import job for a connected athlete.
@@ -665,6 +667,16 @@ Acceptance criteria:
 - Imported Strava activities are idempotently recorded and normalised into `ImportedActivity`.
 - Backfill status and errors are persisted for retry/support.
 - Tests use mocks or fixtures only; no real Strava API calls run in automated tests.
+
+Notes:
+
+- `services/api/internal/providers/strava.BackfillService` can run an initial backfill for a connected Strava provider connection.
+- Backfill uses an `ActivityFetcher` interface for listing activity summaries and fetching activity details; tests use fakes only.
+- Fetched mock Strava details are normalised and persisted through the existing provider-neutral `providerimport.Service`.
+- Re-importing the same Strava activity is idempotent through deterministic provider activity and imported activity IDs.
+- Unsupported non-run activities are recorded as ignored provider imports.
+- Strava rate-limit errors return a deferred backfill result and persist retry/support context on the provider connection.
+- There are still no real Strava API calls, no webhooks, no Flutter UI, and no AI integration.
 
 ## Stage 12: Strava Webhook Handling
 
