@@ -680,6 +680,8 @@ Notes:
 
 ## Stage 12: Strava Webhook Handling
 
+Status: Completed backend-only skeleton pass.
+
 Acceptance criteria:
 
 - Backend exposes provider-facing Strava webhook endpoints.
@@ -687,6 +689,15 @@ Acceptance criteria:
 - Activity create/update/delete events become import jobs or provider activity state changes.
 - Webhook retries and failures are observable and recoverable.
 - Webhook payloads do not flow directly into planning or adaptation logic.
+
+Notes:
+
+- `services/api/internal/providers/strava.WebhookService` parses mock Strava webhook payloads and routes activity create, update, and delete events.
+- Verification and deduplication are represented by testable interfaces; tests use fakes only.
+- Create and update events fetch mock activity detail through the existing `ActivityFetcher` boundary and persist through the provider-neutral `providerimport.Service`.
+- Delete events record ignored provider import state without passing provider payloads to core domain logic.
+- Failed fetches are recorded as failed provider import events for retry/support visibility.
+- There are still no public production webhook endpoints, real Strava API calls, Flutter UI, or AI integration.
 
 ## Stage 13: Activity Matching to Planned Workouts
 
