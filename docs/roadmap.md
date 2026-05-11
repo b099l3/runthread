@@ -742,6 +742,8 @@ Notes:
 
 ## Stage 15: Garmin Direct Integration
 
+Status: Preparation aligned with provider-neutral pipeline; real Garmin remains blocked.
+
 Acceptance criteria:
 
 - Garmin access, approval, data delivery, rate limits, storage, and revocation requirements are validated.
@@ -749,6 +751,14 @@ Acceptance criteria:
 - Garmin-specific fields remain inside Garmin provider packages and persistence boundaries.
 - Users can connect Garmin through the supported Garmin flow when available.
 - Garmin integration failures are logged, retryable where appropriate, and visible through provider-neutral status.
+
+Notes:
+
+- Garmin direct integration remains blocked by `docs/garmin-access-findings.md` and ADR-0007 until external findings are validated.
+- Existing mock Garmin import boundaries already prove provider import, matching, workout result creation, and adaptation can run without Garmin data leaking into core packages.
+- `services/api/internal/providers/garmin` now contains a mock `ActivityProvider` bridge that delegates to the existing mock Garmin normaliser.
+- The bridge clarifies the eventual destination for Garmin provider-specific code without moving the legacy mock package or implementing real provider behavior.
+- No real Garmin OAuth, callbacks, polling, webhooks, token refresh, API calls, Flutter connect enablement, or AI integration were added.
 
 ## Stage 16: Subscriptions and Private Beta
 

@@ -160,6 +160,16 @@ This keeps Garmin-shaped payload handling inside the Garmin package while preser
 
 An in-memory test now exercises the prepared boundary end to end: seed athlete, goal, plan week, and provider connection; import a mock Garmin activity; persist provider activity, raw payload, imported activity, and import event; match the imported activity to a workout; create a workout result; and run adaptation logic. This proves the service boundaries fit together before real Garmin access or endpoint work begins.
 
+Stage 15 preparation adds a small bridge in `services/api/internal/providers/garmin` that implements the shared `providers.ActivityProvider` interface for mock Garmin payloads. It delegates to the existing `services/api/internal/garmin` mock normaliser instead of moving or rewriting Garmin logic.
+
+Current package split:
+
+- `services/api/internal/garmin`: legacy mock Garmin payload structs, mock normalisation, and mock import service tests.
+- `services/api/internal/garminadapter`: bridge from legacy mock Garmin payloads into app-service completion orchestration.
+- `services/api/internal/providers/garmin`: provider-neutral package anchor and mock `ActivityProvider` bridge.
+
+Future cleanup, after Garmin access findings are validated, should move or replace legacy mock boundaries deliberately. Until then, keeping the bridge small avoids churn while proving Garmin can share the same provider-neutral shape Strava uses.
+
 ## Garmin Readiness Review
 
 Reusable for real Garmin:
@@ -176,6 +186,7 @@ Still mock-only:
 - `MockActivityPayload` is not a real Garmin API contract.
 - `NormalizeMockActivity` only handles representative local fields and simple activity type labels.
 - `MockImportService` uses deterministic local IDs and does not process Garmin authorization, token refresh, pagination, webhook signatures, or retry semantics.
+- `services/api/internal/providers/garmin.MockProvider` is only a mock adapter for the shared `ActivityProvider` interface.
 - Raw payload storage currently accepts caller-provided bytes without provider terms, privacy, retention, or redaction policy.
 - The import flow is not wired into app services, ConnectRPC, server startup, scheduler jobs, mobile UI, or Postgres integration tests.
 
@@ -233,7 +244,9 @@ Ready to expose later through RPC or provider triggers:
 - `repository.ProviderStore` can persist provider connections, provider activities, provider payload snapshots, and provider import events.
 - `providerimport.Service` can idempotently receive provider activity metadata, save optional raw payload bytes, save a provider-neutral `ImportedActivity`, link it back to the provider activity, and record processed, ignored, or failed import events.
 - `app.ProviderImportService` can take a completed provider import through matching, workout result creation, conservative adaptation, and core persistence.
+- `app.ProviderActivityMatchService` and `app.ProviderActivityCompletionService` can separately persist match/review state, create workout results, and run deterministic adaptation after a confident match.
 - `garminadapter` proves the desired dependency direction with mock Garmin data: Garmin-shaped input becomes provider-neutral app-service input before core training logic sees it.
+- `providers/garmin.MockProvider` proves Garmin-shaped mock payloads can be exposed through the same `ActivityProvider` interface as Strava mock payloads.
 
 Still blocked by Garmin access validation:
 
