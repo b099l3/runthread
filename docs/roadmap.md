@@ -618,6 +618,8 @@ Notes:
 
 ## Stage 9: Mock Strava Provider
 
+Status: Completed initial mock normalisation pass.
+
 Acceptance criteria:
 
 - A mock Strava payload shape exists in a Strava provider package.
@@ -625,6 +627,14 @@ Acceptance criteria:
 - Tests cover representative road run, trail run, treadmill, ignored/unknown, and invalid payload cases.
 - Provider-specific Strava fields stay inside Strava package tests and adapters.
 - No Strava OAuth, token storage, webhooks, or real Strava API calls are added.
+
+Notes:
+
+- `services/api/internal/providers/strava` contains a mock Strava activity payload type, mock provider adapter, and normalisation logic.
+- Mock Strava road runs, trail runs, and virtual runs map to provider-neutral `domain.ImportedActivity` values.
+- Non-run Strava activity types return an unsupported activity error so a later import orchestration stage can mark them ignored.
+- Strava-specific activity IDs, sport type labels, raw JSON payloads, and provider parsing remain inside the Strava provider package.
+- Real Strava OAuth, token storage, backfill, webhooks, API calls, Flutter UI, and AI integration remain out of scope.
 
 ## Stage 10: Strava OAuth and Token Storage
 
