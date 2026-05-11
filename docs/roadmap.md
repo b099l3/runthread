@@ -638,6 +638,8 @@ Notes:
 
 ## Stage 10: Strava OAuth and Token Storage
 
+Status: Completed backend-only skeleton pass.
+
 Acceptance criteria:
 
 - Backend can start a Strava OAuth flow and generate/validate state.
@@ -645,6 +647,14 @@ Acceptance criteria:
 - Token storage uses secure token references or encrypted storage outside core domain models.
 - Provider connection status reflects pending, connected, error, and disconnected states.
 - Flutter may open the backend-provided authorization URL, but does not store tokens or call Strava directly.
+
+Notes:
+
+- `services/api/internal/providers/strava` contains a backend-only OAuth skeleton for starting a Strava connect flow and completing a callback using test-supplied token data.
+- `OAuthService.StartOAuth` creates or reuses a pending Strava provider connection, generates state, stores that state on provider connection metadata, and returns a Strava authorization URL.
+- `OAuthService.CompleteOAuthCallback` validates state and code, stores token data through a `TokenStore` interface, then marks the provider connection connected with a token reference and provider user ID.
+- Token values remain inside the Strava provider package and token-store boundary. Core domain models only see provider-neutral connection metadata and token references.
+- Automated tests use fake token storage only. There are still no real Strava API calls, no real code exchange, no webhooks, no activity backfill, no Flutter UI, and no AI integration.
 
 ## Stage 11: Strava Activity Backfill/Import
 
