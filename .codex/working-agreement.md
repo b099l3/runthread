@@ -20,3 +20,4 @@ Future Codex sessions should work this way:
 - Ask for clarification only when blocked.
 - Leave clear TODOs for later stages when useful.
 - Verify changes with focused tests or compile checks before finishing.
+- At the end of each implementation session, write the next recommended Codex prompt to `.codex/next-prompt.md` and mention that it was updated in the final response.

@@ -1,27 +1,49 @@
 # Next Codex Prompt
 
-Read README.md, docs/garmin.md, docs/garmin-access-findings.md, docs/decisions.md, docs/roadmap.md, docs/persistence.md, services/api/proto/runthread/v1/runthread.proto, services/api/internal/app/provider_connection.go, services/api/internal/app/provider_import.go, services/api/internal/providerimport, services/api/internal/repository/provider.go, services/api/internal/rpc/handler, and apps/mobile.
+Implement Stage 13: Activity matching to planned workouts for imported Strava activities.
 
-We are continuing Stage 8 preparation.
+Read the project docs first:
 
-Do not implement real Garmin OAuth.
-Do not add AI, auth, subscriptions, server startup Postgres provider wiring, live database integration tests, or Flutter Garmin OAuth screens yet.
+- `README.md`
+- `docs/product.md`
+- `docs/architecture.md`
+- `docs/domain.md`
+- `docs/strava.md`
+- `docs/roadmap.md`
+- `docs/decisions.md`
+- `.codex/working-agreement.md`
+
+Context:
+Runthread now has Stage 9 mock Strava normalisation, Stage 10 backend-only Strava OAuth/token skeletons, Stage 11 Strava backfill/import skeletons, and Stage 12 Strava webhook handling skeletons. Strava provider code must remain isolated under provider packages, and core matching/adaptation must stay provider-neutral.
 
 Goal:
-Use provided external Garmin validation findings to decide the smallest next implementation step.
+Wire the existing provider-neutral matching flow so imported activities from the Strava provider import path can be matched to planned workouts for the current athlete.
 
 Requirements:
-- only proceed if the user provides actual Garmin findings or explicitly asks you to research them
-- do not fill findings from assumptions
-- update docs/garmin-access-findings.md with provided findings, including source/link, date checked, confidence, backend impact, mobile impact, and follow-up status
-- review whether the findings require changes to protobuf contracts, provider persistence, provider import orchestration, server startup, or mobile UX
-- propose the smallest next implementation step, but do not implement it unless the findings clearly unblock it and the user asks for implementation
-- keep `Connect Garmin` disabled unless real authorization behavior is validated and implementation is explicitly requested
-- do not add OAuth, callbacks, webhooks, polling jobs, or real sync unless the findings justify the path and the user explicitly asks for that implementation
-- do not add or change protobuf methods
-- do not call StartProviderConnection from Flutter
-- run asdf exec flutter analyze
-- run asdf exec flutter test
-- run asdf exec go test ./... from services/api if backend docs/code change
-- update docs/garmin.md and docs/roadmap.md
-- give me the next prompt
+
+- Use `domain.ImportedActivity` and existing provider-neutral matching concepts.
+- Do not add Strava-specific matching rules unless the signal is first mapped to an existing provider-neutral field.
+- Keep Strava-specific payloads and fields inside `services/api/internal/providers/strava`.
+- Add tests for confident match, uncertain match, rejected match, and manual override or deferred manual-review state if currently supported.
+- Reuse existing matching, provider import, repository, and app-service boundaries where appropriate.
+- Update `docs/roadmap.md` with Stage 13 progress.
+- Do not build Flutter UI.
+- Do not call Strava APIs.
+- Do not add AI integration.
+
+Acceptance criteria:
+
+- Imported Strava activities can flow into provider-neutral workout matching.
+- Core domain, planning, matching, and adaptation packages do not depend on Strava types.
+- Go tests pass.
+
+Before coding:
+
+- Make a short plan.
+- List expected files to touch.
+
+After coding:
+
+- Summarise changes.
+- Note any open questions.
+- Write the next recommended Codex prompt to `.codex/next-prompt.md`.
