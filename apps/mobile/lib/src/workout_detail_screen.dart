@@ -116,7 +116,7 @@ class _CompletionActionSection extends StatelessWidget {
         Text(
           hasResult
               ? 'This workout is completed from an imported activity match.'
-              : 'Real completion will come from imported Garmin activity later.',
+              : 'Real completion will come from imported Strava activity later.',
           style: textTheme.bodyMedium?.copyWith(
             color: colorScheme.onSurfaceVariant,
           ),

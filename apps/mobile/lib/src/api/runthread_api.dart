@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/plan_week.dart';
 import '../models/provider_connection.dart';
+import '../week_dates.dart';
 
 abstract interface class RunthreadApi {
   Future<CurrentPlanWeek> getCurrentPlanWeek();
@@ -19,7 +20,6 @@ class HttpRunthreadApi implements RunthreadApi {
 
   static const _demoAthleteId = 'athlete-1';
   static const _demoGoalId = 'goal-1';
-  static const _demoTargetWeekDate = '2026-06-03';
 
   @override
   Future<CurrentPlanWeek> getCurrentPlanWeek() async {
@@ -32,10 +32,10 @@ class HttpRunthreadApi implements RunthreadApi {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: jsonEncode(const {
+      body: jsonEncode({
         'athleteId': _demoAthleteId,
         'goalId': _demoGoalId,
-        'targetWeekDate': _demoTargetWeekDate,
+        'targetWeekDate': currentWeekTargetDate(),
       }),
     );
 
@@ -62,13 +62,13 @@ class HttpRunthreadApi implements RunthreadApi {
       },
       body: jsonEncode(const {
         'athleteId': _demoAthleteId,
-        'provider': 'PROVIDER_GARMIN',
+        'provider': 'PROVIDER_STRAVA',
       }),
     );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw RunthreadApiException(
-        'Backend returned ${response.statusCode} for Garmin connection status.',
+        'Backend returned ${response.statusCode} for Strava connection status.',
       );
     }
 

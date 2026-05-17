@@ -5,8 +5,16 @@ import 'package:runthread_mobile/src/app.dart';
 import 'package:runthread_mobile/src/demo/demo_fallback_api.dart';
 import 'package:runthread_mobile/src/models/plan_week.dart';
 import 'package:runthread_mobile/src/models/provider_connection.dart';
+import 'package:runthread_mobile/src/week_dates.dart';
 
 void main() {
+  test('current week date helpers use the containing Monday week', () {
+    final saturday = DateTime(2026, 5, 16, 13, 45);
+
+    expect(currentWeekStart(now: saturday), DateTime(2026, 5, 11));
+    expect(currentWeekTargetDate(now: saturday), '2026-05-16');
+  });
+
   testWidgets('weekly plan screen renders seven workouts', (tester) async {
     tester.view.physicalSize = const Size(900, 1800);
     tester.view.devicePixelRatio = 1;
@@ -27,9 +35,9 @@ void main() {
     expect(find.text('Strength'), findsOneWidget);
     expect(find.textContaining('5.0 km'), findsOneWidget);
     expect(find.textContaining('8.0 km'), findsOneWidget);
-    expect(find.text('Garmin'), findsOneWidget);
+    expect(find.text('Strava'), findsOneWidget);
     expect(find.text('Not connected'), findsOneWidget);
-    expect(find.text('Connect Garmin'), findsOneWidget);
+    expect(find.text('Connect Strava'), findsOneWidget);
     expect(find.text('Plan changes'), findsOneWidget);
     expect(find.text('No adaptations this week.'), findsOneWidget);
   });
@@ -79,7 +87,7 @@ void main() {
     expect(find.textContaining('Demo data ·'), findsOneWidget);
   });
 
-  testWidgets('garmin connection entry point is read only', (tester) async {
+  testWidgets('strava connection entry point is read only', (tester) async {
     tester.view.physicalSize = const Size(900, 1800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -92,22 +100,22 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Garmin'), findsOneWidget);
+    expect(find.text('Strava'), findsOneWidget);
     expect(
       find.text(
-        'Run completion will come from imported Garmin activity once provider access is ready.',
+        'Run completion will come from imported Strava activity once provider access is ready.',
       ),
       findsOneWidget,
     );
     expect(find.text('Disabled for now'), findsOneWidget);
 
     final connectButton = tester.widget<OutlinedButton>(
-      find.widgetWithText(OutlinedButton, 'Connect Garmin'),
+      find.widgetWithText(OutlinedButton, 'Connect Strava'),
     );
     expect(connectButton.onPressed, isNull);
   });
 
-  testWidgets('garmin connection entry point shows pending status', (
+  testWidgets('strava connection entry point shows pending status', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(900, 1800);
@@ -127,21 +135,21 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Garmin'), findsOneWidget);
+    expect(find.text('Strava'), findsOneWidget);
     expect(find.text('Pending'), findsOneWidget);
     expect(
       find.text(
-        'Connection has started. Garmin authorization remains disabled until provider access is ready.',
+        'Connection has started. Strava authorization remains disabled until provider access is ready.',
       ),
       findsOneWidget,
     );
     final connectButton = tester.widget<OutlinedButton>(
-      find.widgetWithText(OutlinedButton, 'Connect Garmin'),
+      find.widgetWithText(OutlinedButton, 'Connect Strava'),
     );
     expect(connectButton.onPressed, isNull);
   });
 
-  testWidgets('garmin connection entry point shows connected status', (
+  testWidgets('strava connection entry point shows connected status', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(900, 1800);
@@ -161,11 +169,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Garmin'), findsOneWidget);
+    expect(find.text('Strava'), findsOneWidget);
     expect(find.text('Connected'), findsOneWidget);
     expect(
       find.text(
-        'Runthread is ready to receive imported Garmin activity for workout completion.',
+        'Runthread is ready to receive imported Strava activity for workout completion.',
       ),
       findsOneWidget,
     );
@@ -201,7 +209,7 @@ void main() {
     expect(find.text('Mark complete'), findsOneWidget);
     expect(
       find.text(
-        'Real completion will come from imported Garmin activity later.',
+        'Real completion will come from imported Strava activity later.',
       ),
       findsOneWidget,
     );
@@ -385,7 +393,24 @@ void main() {
     expect(currentPlanWeek.workoutResults.single.durationSeconds, 1800);
   });
 
-  test('provider connection status parses protobuf JSON', () {
+  test('provider connection status parses Strava protobuf JSON', () {
+    final status = ProviderConnectionStatusView.fromJson({
+      'hasConnection': true,
+      'connection': {
+        'id': 'connection-1',
+        'athleteId': 'athlete-1',
+        'provider': 'PROVIDER_STRAVA',
+        'status': 'PROVIDER_CONNECTION_STATUS_CONNECTED',
+        'lastError': '',
+      },
+    });
+
+    expect(status.hasConnection, isTrue);
+    expect(status.providerLabel, 'Strava');
+    expect(status.statusLabel, 'Connected');
+  });
+
+  test('provider connection status still parses Garmin protobuf JSON', () {
     final status = ProviderConnectionStatusView.fromJson({
       'hasConnection': true,
       'connection': {
@@ -397,9 +422,7 @@ void main() {
       },
     });
 
-    expect(status.hasConnection, isTrue);
     expect(status.providerLabel, 'Garmin');
-    expect(status.statusLabel, 'Connected');
   });
 }
 
@@ -439,7 +462,7 @@ ProviderConnectionStatusView testProviderConnectionStatus(
     connection: ProviderConnection(
       id: 'connection-1',
       athleteId: 'athlete-1',
-      provider: Provider.garmin,
+      provider: Provider.strava,
       status: status,
       lastError: '',
     ),

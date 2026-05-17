@@ -29,7 +29,7 @@ class ProviderConnectionStatusView {
     );
   }
 
-  String get providerLabel => connection?.providerLabel ?? 'Garmin';
+  String get providerLabel => connection?.providerLabel ?? 'Strava';
 
   String get statusLabel {
     if (!hasConnection || connection == null) {
@@ -40,23 +40,23 @@ class ProviderConnectionStatusView {
 
   String get description {
     if (!hasConnection || connection == null) {
-      return 'Run completion will come from imported Garmin activity once provider access is ready.';
+      return 'Run completion will come from imported Strava activity once provider access is ready.';
     }
     return switch (connection!.status) {
       ProviderConnectionStatus.pending =>
-        'Connection has started. Garmin authorization remains disabled until provider access is ready.',
+        'Connection has started. Strava authorization remains disabled until provider access is ready.',
       ProviderConnectionStatus.connected =>
-        'Runthread is ready to receive imported Garmin activity for workout completion.',
+        'Runthread is ready to receive imported Strava activity for workout completion.',
       ProviderConnectionStatus.syncing =>
-        'Garmin activity import is in progress. Plan changes will appear after matching finishes.',
+        'Strava activity import is in progress. Plan changes will appear after matching finishes.',
       ProviderConnectionStatus.error =>
         connection!.lastError.isEmpty
-            ? 'Garmin connection needs attention before activity can import.'
+            ? 'Strava connection needs attention before activity can import.'
             : connection!.lastError,
       ProviderConnectionStatus.disconnected =>
-        'Garmin is disconnected. Runthread is not importing activity from this provider.',
+        'Strava is disconnected. Runthread is not importing activity from this provider.',
       ProviderConnectionStatus.unspecified =>
-        'Run completion will come from imported Garmin activity once provider access is ready.',
+        'Run completion will come from imported Strava activity once provider access is ready.',
     };
   }
 }
@@ -88,6 +88,7 @@ class ProviderConnection {
 
   String get providerLabel => switch (provider) {
     Provider.garmin => 'Garmin',
+    Provider.strava => 'Strava',
     Provider.unspecified => 'Provider',
   };
 
@@ -101,7 +102,7 @@ class ProviderConnection {
   };
 }
 
-enum Provider { unspecified, garmin }
+enum Provider { unspecified, garmin, strava }
 
 enum ProviderConnectionStatus {
   unspecified,
@@ -115,6 +116,7 @@ enum ProviderConnectionStatus {
 Provider _providerFromJson(String? value) {
   return switch (value) {
     'PROVIDER_GARMIN' => Provider.garmin,
+    'PROVIDER_STRAVA' => Provider.strava,
     _ => Provider.unspecified,
   };
 }

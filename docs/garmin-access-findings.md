@@ -70,9 +70,14 @@ Future session read list after findings are available:
 
 These tasks should be completed outside the codebase before any real Garmin implementation starts. Record each validated answer in the matching finding section below.
 
+Sources to check first:
+
+- Garmin Connect Developer Access request form: https://www.garmin.com/en-US/forms/GarminConnectDeveloperAccess/
+- Garmin forum thread about possible Developer Program request submission issues: https://forums.garmin.com/apps-software/mobile-apps-web/f/garmin-connect-mobile-andriod/433735/is-the-garmin-connect-developer-program-down-i-can-t-submit-a-request#pifragment-1286=2
+
 1. Confirm the Garmin access path.
    Why it matters: Runthread needs to know whether Garmin activity import is available through a public developer flow, partner approval, business application, or another access path.
-   Evidence to collect: official Garmin program name, application URL or contact path, approval requirements, sandbox/production distinction, and any commercial-use restrictions.
+   Evidence to collect: official Garmin program name, application URL or contact path, whether the Garmin Connect Developer Access request form is currently accepting submissions, approval requirements, sandbox/production distinction, and any commercial-use restrictions.
    Fills: Access And Approval.
 
 2. Confirm the authorization model.

@@ -61,11 +61,17 @@ Use `docs/garmin-access-findings.md` to record validated answers. That file is t
 
 The same findings file includes the first external validation tasks in recommended order. Complete those tasks before changing protobuf contracts, enabling mobile connection actions, adding callbacks, or implementing sync.
 
+Initial sources to check during validation:
+
+- Garmin Connect Developer Access request form: https://www.garmin.com/en-US/forms/GarminConnectDeveloperAccess/
+- Garmin forum thread about possible Developer Program request submission issues: https://forums.garmin.com/apps-software/mobile-apps-web/f/garmin-connect-mobile-andriod/433735/is-the-garmin-connect-developer-program-down-i-can-t-submit-a-request#pifragment-1286=2
+
 The Garmin work is now at a preparation pause point. Provider persistence, provider import orchestration, provider connection RPC placeholders, and the read-only mobile Garmin status surface are ready to continue from, but production Garmin implementation remains blocked by ADR-0007 until the findings file has validated answers.
 
 Access and approval:
 
 - What Garmin developer, partner, or API access program does Runthread need for activity import?
+- Is the Garmin Connect Developer Access request form currently accepting submissions?
 - Is approval required before development, before production launch, or both?
 - Are there separate sandbox, beta, and production credentials?
 - What app information, privacy policy, security information, callback URLs, or business details are required for approval?

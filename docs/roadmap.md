@@ -762,6 +762,8 @@ Notes:
 
 ## Stage 16: Subscriptions and Private Beta
 
+Status: Preparation checklist documented; implementation not started.
+
 Acceptance criteria:
 
 - Subscription flow is implemented for the chosen platform and backend model.
@@ -769,3 +771,11 @@ Acceptance criteria:
 - Operational monitoring, support paths, privacy review, deletion/export behavior, and provider terms review exist.
 - Strava and Garmin data access rules are documented before beta launch.
 - The beta path does not depend on AI-generated training decisions.
+
+Notes:
+
+- Stage 16 is currently a readiness planning stage, not a payment/auth/provider implementation stage.
+- See `docs/private-beta.md` for the private beta checklist, blockers, and smallest next implementation order.
+- The beta provider path remains Strava-first for MVP validation. Garmin direct integration remains blocked by `docs/garmin-access-findings.md` and ADR-0007.
+- Before private beta, Runthread still needs production auth/current athlete identity, live Strava OAuth and token storage, provider import operations, deletion/export and retention behavior, monitoring/support readiness, and a subscription or entitlement decision.
+- No real subscriptions, payment provider calls, production auth, live Strava or Garmin API calls, Flutter UI changes, or AI integration have been added for this preparation pass.

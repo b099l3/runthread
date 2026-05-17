@@ -1,6 +1,6 @@
 # Next Codex Prompt
 
-Implement Stage 16 preparation: subscriptions and private beta readiness plan.
+Implement the next Stage 16 step: decide and document the beta auth/current-athlete boundary, then add the smallest backend skeleton only if it clarifies that boundary.
 
 Read the project docs first:
 
@@ -11,34 +11,39 @@ Read the project docs first:
 - `docs/strava.md`
 - `docs/garmin.md`
 - `docs/garmin-access-findings.md`
+- `docs/private-beta.md`
 - `docs/roadmap.md`
 - `docs/decisions.md`
 - `.codex/working-agreement.md`
 
 Context:
-Runthread now has a provider-neutral Strava MVP import loop through mock normalisation, backend-only OAuth/token skeletons, backfill/import skeletons, webhook skeletons, matching, workout result creation, and deterministic adaptation. Garmin direct integration is aligned with the provider-neutral pipeline but remains blocked by external access findings.
+Runthread has a provider-neutral Strava MVP import loop through mock provider code, backend-only OAuth/token skeletons, backfill/import skeletons, webhook skeletons, matching, workout result creation, deterministic adaptation, and Garmin alignment. Stage 16 now has a private beta readiness checklist. The app still uses demo `athlete-1` / `goal-1` identifiers and local demo fallback. VS Code launch configs have been checked; Flutter debug launch now has separate local/iOS and Android emulator backend URL configs.
 
 Goal:
-Prepare Stage 16 by documenting and lightly structuring private beta readiness without implementing payments, production auth, live provider calls, or AI integration.
+Prepare the private beta auth/current-athlete boundary so later provider connection and plan reads can stop depending on demo identifiers.
 
 Requirements:
 
-- Review product, roadmap, provider, privacy, and current backend/mobile readiness.
-- Update docs with a private beta readiness checklist covering subscriptions, onboarding, auth/current athlete identity, provider connection readiness, operational monitoring, support, privacy, data deletion/export, and provider terms.
-- Keep the beta plan Strava-first for MVP validation and keep Garmin direct integration explicitly blocked until findings are validated.
-- Do not implement real subscriptions or payment provider integration.
-- Do not implement production auth.
+- Document the chosen near-term beta identity approach and how the backend should resolve the current athlete, current goal, and current plan.
+- Keep this as a boundary/skeleton stage; do not implement full production auth unless explicitly requested.
+- Do not implement subscriptions or payment provider calls.
 - Do not call Strava or Garmin APIs.
-- Do not build Flutter UI unless docs already require a tiny copy/state-only change.
-- Do not add AI integration.
-- Add small backend skeletons/tests only if they clarify beta readiness boundaries without starting production implementation.
+- Do not enable Garmin.
+- Do not add AI integration or send provider activity data to AI systems.
+- If adding backend code, keep it small, provider-neutral, and testable.
+- Preserve existing demo/local development behavior unless the docs explicitly say to change it.
+- Run current automated checks after changes:
+  - `cd services/api && asdf exec go test ./...`
+  - `cd apps/mobile && asdf exec flutter analyze`
+  - `cd apps/mobile && asdf exec flutter test`
 
 Acceptance criteria:
 
-- Docs clearly describe what remains before private beta.
-- Subscriptions and private beta scope are concrete enough for the next implementation stage.
-- Provider data privacy and no-AI boundaries remain explicit.
-- Go tests pass if backend code changes.
+- Docs clearly describe the beta auth/current-athlete boundary and remaining implementation work.
+- Demo/local development behavior remains clear.
+- Core domain and provider packages remain provider-neutral.
+- No real auth, subscription, provider API, Garmin, or AI implementation is added.
+- Go and Flutter checks pass, or failures are documented with exact next steps.
 
 Before coding:
 

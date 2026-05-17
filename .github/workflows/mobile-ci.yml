@@ -1,0 +1,48 @@
+name: Mobile CI
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/mobile-ci.yml"
+      - "apps/mobile/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/mobile-ci.yml"
+      - "apps/mobile/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mobile:
+    name: Flutter analyze and test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.6"
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test

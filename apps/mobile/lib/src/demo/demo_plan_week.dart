@@ -1,4 +1,5 @@
 import '../models/plan_week.dart';
+import '../week_dates.dart';
 
 CurrentPlanWeek demoCurrentPlanWeek() {
   return CurrentPlanWeek(
@@ -11,7 +12,7 @@ CurrentPlanWeek demoCurrentPlanWeek() {
 }
 
 PlanWeek demoPlanWeek() {
-  final startsOn = DateTime(2026, 6, 1);
+  final startsOn = currentWeekStart();
   return PlanWeek(
     id: 'demo-week',
     startsOn: startsOn,

@@ -27,7 +27,7 @@
       }
     },
     {
-      "name": "Runthread Mobile Debug",
+      "name": "Runthread Mobile Debug (local/iOS)",
       "type": "dart",
       "request": "launch",
       "program": "${workspaceFolder}/apps/mobile/lib/main.dart",
@@ -35,6 +35,17 @@
       "flutterMode": "debug",
       "toolArgs": [
         "--dart-define=RUNTHREAD_API_BASE_URL=http://localhost:8080"
+      ]
+    },
+    {
+      "name": "Runthread Mobile Debug (Android emulator)",
+      "type": "dart",
+      "request": "launch",
+      "program": "${workspaceFolder}/apps/mobile/lib/main.dart",
+      "cwd": "${workspaceFolder}/apps/mobile",
+      "flutterMode": "debug",
+      "toolArgs": [
+        "--dart-define=RUNTHREAD_API_BASE_URL=http://10.0.2.2:8080"
       ]
     }
   ],
@@ -48,10 +59,18 @@
       "stopAll": true
     },
     {
-      "name": "Runthread API + Mobile Debug",
+      "name": "Runthread API + Mobile Debug (local/iOS)",
       "configurations": [
         "Runthread API Debug",
-        "Runthread Mobile Debug"
+        "Runthread Mobile Debug (local/iOS)"
+      ],
+      "stopAll": true
+    },
+    {
+      "name": "Runthread API + Mobile Debug (Android emulator)",
+      "configurations": [
+        "Runthread API Debug",
+        "Runthread Mobile Debug (Android emulator)"
       ],
       "stopAll": true
     }

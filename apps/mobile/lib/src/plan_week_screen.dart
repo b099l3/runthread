@@ -244,7 +244,7 @@ class _ProviderConnectionSummary extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: null,
                   icon: const Icon(Icons.link),
-                  label: const Text('Connect Garmin'),
+                  label: Text('Connect ${providerConnection.providerLabel}'),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
