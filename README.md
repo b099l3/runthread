@@ -48,6 +48,20 @@ asdf current
 
 Go, sqlc, buf, and Flutter are pinned today.
 
+Local machine-specific configuration belongs in `.env.local`, which is ignored by git. Start from the committed example:
+
+```sh
+cp .env.example .env.local
+```
+
+The backend reads configuration from the process environment. Load local values before running backend commands:
+
+```sh
+set -a
+. ./.env.local
+set +a
+```
+
 ```sh
 cd services/api
 go run ./cmd/server
