@@ -88,8 +88,8 @@ func startProviderConnectionRequestToApp(req *rpcv1.StartProviderConnectionReque
 	}
 
 	// TODO: Replace request-supplied athlete ID with authenticated user context
-	// once auth exists. redirect_uri remains placeholder-shaped until Garmin's
-	// actual connection flow is validated.
+	// once auth exists. redirect_uri remains provider-specific and should be
+	// validated by each real connection flow before OAuth is enabled.
 	return app.StartProviderConnectionRequest{
 		AthleteID:   req.GetAthleteId(),
 		Provider:    providerToApp(req.GetProvider()),

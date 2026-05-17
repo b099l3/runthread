@@ -79,6 +79,7 @@ type Provider int32
 const (
 	Provider_PROVIDER_UNSPECIFIED Provider = 0
 	Provider_PROVIDER_GARMIN      Provider = 1
+	Provider_PROVIDER_STRAVA      Provider = 2
 )
 
 // Enum value maps for Provider.
@@ -86,10 +87,12 @@ var (
 	Provider_name = map[int32]string{
 		0: "PROVIDER_UNSPECIFIED",
 		1: "PROVIDER_GARMIN",
+		2: "PROVIDER_STRAVA",
 	}
 	Provider_value = map[string]int32{
 		"PROVIDER_UNSPECIFIED": 0,
 		"PROVIDER_GARMIN":      1,
+		"PROVIDER_STRAVA":      2,
 	}
 )
 
@@ -2533,10 +2536,11 @@ const file_runthread_v1_runthread_proto_rawDesc = "" +
 	"\x1cEXPERIENCE_LEVEL_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19EXPERIENCE_LEVEL_BEGINNER\x10\x01\x12!\n" +
 	"\x1dEXPERIENCE_LEVEL_INTERMEDIATE\x10\x02\x12\x1d\n" +
-	"\x19EXPERIENCE_LEVEL_ADVANCED\x10\x03*9\n" +
+	"\x19EXPERIENCE_LEVEL_ADVANCED\x10\x03*N\n" +
 	"\bProvider\x12\x18\n" +
 	"\x14PROVIDER_UNSPECIFIED\x10\x00\x12\x13\n" +
-	"\x0fPROVIDER_GARMIN\x10\x01*\x93\x02\n" +
+	"\x0fPROVIDER_GARMIN\x10\x01\x12\x13\n" +
+	"\x0fPROVIDER_STRAVA\x10\x02*\x93\x02\n" +
 	"\x18ProviderConnectionStatus\x12*\n" +
 	"&PROVIDER_CONNECTION_STATUS_UNSPECIFIED\x10\x00\x12&\n" +
 	"\"PROVIDER_CONNECTION_STATUS_PENDING\x10\x01\x12(\n" +

@@ -64,6 +64,29 @@ func TestInMemoryStoreReturnsNotFound(t *testing.T) {
 	}
 }
 
+func TestInMemoryStoreGetsCurrentTrainingGoal(t *testing.T) {
+	ctx := context.Background()
+	store := NewInMemoryStore()
+	goal := trainingGoal("athlete-1")
+	goal.ID = "goal-old"
+	if err := store.SaveTrainingGoal(ctx, goal); err != nil {
+		t.Fatalf("save training goal: %v", err)
+	}
+	currentGoal := goal
+	currentGoal.ID = "goal-current"
+	if err := store.SaveTrainingGoal(ctx, currentGoal); err != nil {
+		t.Fatalf("save current training goal: %v", err)
+	}
+
+	current, err := store.GetCurrentTrainingGoal(ctx, "athlete-1")
+	if err != nil {
+		t.Fatalf("GetCurrentTrainingGoal returned error: %v", err)
+	}
+	if current.ID != "goal-current" {
+		t.Fatalf("current goal = %q, want goal-current", current.ID)
+	}
+}
+
 func TestInMemoryStoreRejectsInvalidRecords(t *testing.T) {
 	err := NewInMemoryStore().SaveAthleteProfile(context.Background(), domain.AthleteProfile{})
 	if err == nil {

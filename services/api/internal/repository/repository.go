@@ -20,6 +20,10 @@ type TrainingGoalRepository interface {
 	GetTrainingGoal(context.Context, string) (domain.TrainingGoal, error)
 }
 
+type CurrentTrainingGoalRepository interface {
+	GetCurrentTrainingGoal(context.Context, string) (domain.TrainingGoal, error)
+}
+
 type PlanWeekRepository interface {
 	SavePlanWeek(context.Context, domain.PlanWeek) error
 	GetPlanWeek(context.Context, string) (domain.PlanWeek, error)
@@ -81,6 +85,7 @@ type ProviderImportEventRepository interface {
 type Store interface {
 	AthleteProfileRepository
 	TrainingGoalRepository
+	CurrentTrainingGoalRepository
 	PlanWeekRepository
 	PlannedWorkoutRepository
 	ImportedActivityRepository

@@ -190,6 +190,7 @@ enum ExperienceLevel {
 enum Provider {
   PROVIDER_UNSPECIFIED = 0;
   PROVIDER_GARMIN = 1;
+  PROVIDER_STRAVA = 2;
 }
 
 enum ProviderConnectionStatus {

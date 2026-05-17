@@ -47,6 +47,77 @@ func TestStartProviderConnectionCreatesPendingGarminConnection(t *testing.T) {
 	}
 }
 
+func TestStartProviderConnectionCreatesPendingStravaConnection(t *testing.T) {
+	ctx := context.Background()
+	store := repository.NewInMemoryStore()
+	service := ProviderConnectionService{
+		Store: store,
+		Now:   providerConnectionNow,
+	}
+
+	response, err := service.StartProviderConnection(ctx, StartProviderConnectionRequest{
+		AthleteID:   "athlete-1",
+		Provider:    ProviderStrava,
+		RedirectURI: "runthread://provider/strava/callback",
+	})
+	if err != nil {
+		t.Fatalf("StartProviderConnection returned error: %v", err)
+	}
+
+	if response.Connection.Provider != ProviderStrava {
+		t.Fatalf("connection provider = %q, want strava", response.Connection.Provider)
+	}
+	if response.Connection.Status != repository.ProviderConnectionStatusPending {
+		t.Fatalf("connection status = %q, want pending", response.Connection.Status)
+	}
+	if response.OAuthReady {
+		t.Fatal("expected oauth ready false until real Strava OAuth is wired")
+	}
+}
+
+func TestStartProviderConnectionDelegatesConfiguredStravaStarter(t *testing.T) {
+	ctx := context.Background()
+	store := repository.NewInMemoryStore()
+	starter := &fakeProviderConnectionStarter{
+		response: StartProviderConnectionResponse{
+			Connection: repository.ProviderConnection{
+				ID:        "connection-1",
+				AthleteID: "athlete-1",
+				Provider:  ProviderStrava,
+				Status:    repository.ProviderConnectionStatusPending,
+			},
+			AuthorizationURL: "https://www.strava.com/oauth/authorize?state=state-1",
+			State:            "state-1",
+			OAuthReady:       true,
+		},
+	}
+	service := ProviderConnectionService{
+		Store: store,
+		ProviderStarters: map[string]ProviderConnectionStarter{
+			ProviderStrava: starter,
+		},
+	}
+
+	response, err := service.StartProviderConnection(ctx, StartProviderConnectionRequest{
+		AthleteID:   "athlete-1",
+		Provider:    ProviderStrava,
+		RedirectURI: "runthread://provider/strava/callback",
+	})
+	if err != nil {
+		t.Fatalf("StartProviderConnection returned error: %v", err)
+	}
+
+	if starter.request.Provider != ProviderStrava {
+		t.Fatalf("starter provider = %q, want strava", starter.request.Provider)
+	}
+	if !response.OAuthReady {
+		t.Fatal("OAuthReady = false, want true")
+	}
+	if response.AuthorizationURL == "" {
+		t.Fatal("AuthorizationURL is empty")
+	}
+}
+
 func TestStartProviderConnectionReusesPendingConnection(t *testing.T) {
 	ctx := context.Background()
 	store := repository.NewInMemoryStore()
@@ -139,4 +210,18 @@ func providerConnectionRecord(id string, athleteID string, status repository.Pro
 
 func providerConnectionNow() time.Time {
 	return time.Date(2026, time.June, 5, 9, 0, 0, 0, time.UTC)
+}
+
+type fakeProviderConnectionStarter struct {
+	request  StartProviderConnectionRequest
+	response StartProviderConnectionResponse
+	err      error
+}
+
+func (s *fakeProviderConnectionStarter) StartProviderConnection(ctx context.Context, req StartProviderConnectionRequest) (StartProviderConnectionResponse, error) {
+	s.request = req
+	if s.err != nil {
+		return StartProviderConnectionResponse{}, s.err
+	}
+	return s.response, nil
 }

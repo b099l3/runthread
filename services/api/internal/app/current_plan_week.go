@@ -40,7 +40,7 @@ func (s CurrentPlanWeekService) GetCurrentPlanWeek(ctx context.Context, request 
 			return GetCurrentPlanWeekResponse{}, fmt.Errorf("athlete id is required")
 		}
 		if request.TargetWeekDate.IsZero() {
-			return GetCurrentPlanWeekResponse{}, fmt.Errorf("target week date is required")
+			request.TargetWeekDate = time.Now()
 		}
 	}
 

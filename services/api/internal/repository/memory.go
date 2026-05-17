@@ -14,6 +14,7 @@ type InMemoryStore struct {
 
 	athleteProfiles    map[string]domain.AthleteProfile
 	trainingGoals      map[string]domain.TrainingGoal
+	trainingGoalOrder  []string
 	planWeeks          map[string]domain.PlanWeek
 	plannedWorkouts    map[string]domain.PlannedWorkout
 	importedActivities map[string]domain.ImportedActivity
@@ -87,6 +88,9 @@ func (s *InMemoryStore) SaveTrainingGoal(ctx context.Context, goal domain.Traini
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if _, exists := s.trainingGoals[goal.ID]; !exists {
+		s.trainingGoalOrder = append(s.trainingGoalOrder, goal.ID)
+	}
 	s.trainingGoals[goal.ID] = goal
 	return nil
 }
@@ -103,6 +107,22 @@ func (s *InMemoryStore) GetTrainingGoal(ctx context.Context, id string) (domain.
 		return domain.TrainingGoal{}, ErrNotFound
 	}
 	return goal, nil
+}
+
+func (s *InMemoryStore) GetCurrentTrainingGoal(ctx context.Context, athleteID string) (domain.TrainingGoal, error) {
+	if err := ctx.Err(); err != nil {
+		return domain.TrainingGoal{}, err
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for i := len(s.trainingGoalOrder) - 1; i >= 0; i-- {
+		goal := s.trainingGoals[s.trainingGoalOrder[i]]
+		if goal.AthleteID == athleteID {
+			return goal, nil
+		}
+	}
+	return domain.TrainingGoal{}, ErrNotFound
 }
 
 func (s *InMemoryStore) SavePlanWeek(ctx context.Context, week domain.PlanWeek) error {

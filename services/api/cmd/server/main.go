@@ -3,15 +3,22 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/runthread/runthread/services/api/internal/app"
 	"github.com/runthread/runthread/services/api/internal/config"
+	"github.com/runthread/runthread/services/api/internal/domain"
+	"github.com/runthread/runthread/services/api/internal/planning"
+	"github.com/runthread/runthread/services/api/internal/providerimport"
+	"github.com/runthread/runthread/services/api/internal/providers/strava"
+	"github.com/runthread/runthread/services/api/internal/repository"
 	rpchandler "github.com/runthread/runthread/services/api/internal/rpc/handler"
 	"github.com/runthread/runthread/services/api/internal/rpc/runthread/v1/runthreadv1connect"
 	"github.com/runthread/runthread/services/api/internal/startup"
@@ -34,8 +41,24 @@ func main() {
 		log.Printf("api server app setup failed error=%v", err)
 		os.Exit(1)
 	}
+	stravaRuntime, err := composeStravaRuntime(cfg, storage.Store)
+	if err != nil {
+		log.Printf("api server Strava setup failed error=%v", err)
+		os.Exit(1)
+	}
+	if stravaRuntime != nil {
+		services.ProviderConnect.ProviderStarters = map[string]app.ProviderConnectionStarter{
+			app.ProviderStrava: strava.ConnectionStarter{
+				OAuth:       stravaRuntime.OAuth,
+				RedirectURI: cfg.StravaOAuthRedirectURI,
+				Scopes:      []string{"activity:read_all"},
+			},
+		}
+	}
 
-	mux := newMux(services)
+	mux := newMux(services, muxOptions{
+		strava: stravaRuntime,
+	})
 
 	server := &http.Server{
 		Addr:              cfg.ServerAddress,
@@ -67,7 +90,16 @@ func main() {
 	log.Print("api server stopped")
 }
 
-func newMux(services app.Services) *http.ServeMux {
+type muxOptions struct {
+	strava *stravaRuntime
+}
+
+func newMux(services app.Services, options ...muxOptions) *http.ServeMux {
+	var option muxOptions
+	if len(options) > 0 {
+		option = options[0]
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -84,5 +116,158 @@ func newMux(services app.Services) *http.ServeMux {
 		rpchandler.NewRunthreadService(services),
 	)
 	mux.Handle(runthreadPath, runthreadHandler)
+	if option.strava != nil {
+		mux.HandleFunc("/providers/strava/oauth/callback", stravaOAuthCallbackHandler(option.strava))
+	}
 	return mux
+}
+
+type stravaRuntime struct {
+	OAuth       *strava.OAuthService
+	Backfill    strava.BackfillService
+	Store       repository.Store
+	RedirectURI string
+}
+
+func composeStravaRuntime(cfg config.Config, store repository.Store) (*stravaRuntime, error) {
+	if !cfg.StravaOAuthConfigured() {
+		return nil, nil
+	}
+	providerStore, ok := store.(repository.ProviderStore)
+	if !ok {
+		return nil, nil
+	}
+	baseURL := strings.TrimRight(cfg.StravaAPIBaseURL, "/")
+	if baseURL == "" {
+		baseURL = config.DefaultStravaAPIBaseURL
+	}
+	tokenStore := strava.NewInMemoryTokenStore()
+	exchanger := strava.HTTPCodeExchanger{
+		ClientID:     cfg.StravaClientID,
+		ClientSecret: cfg.StravaClientSecret,
+		TokenURL:     baseURL + "/oauth/token",
+	}
+	oauth := &strava.OAuthService{
+		Store:        providerStore,
+		Exchanger:    exchanger,
+		Tokens:       tokenStore,
+		ClientID:     cfg.StravaClientID,
+		AuthorizeURL: baseURL + "/oauth/authorize",
+	}
+	importer, err := providerimport.NewService(providerStore, store)
+	if err != nil {
+		return nil, fmt.Errorf("compose Strava provider import: %w", err)
+	}
+	tokenManager := strava.TokenManager{
+		Store:     tokenStore,
+		Refresher: exchanger,
+	}
+	return &stravaRuntime{
+		OAuth: oauth,
+		Backfill: strava.BackfillService{
+			Providers: providerStore,
+			Importer:  importer,
+			Fetcher: strava.HTTPActivityFetcher{
+				BaseURL: baseURL,
+				Tokens:  tokenManager,
+			},
+		},
+		Store:       store,
+		RedirectURI: cfg.StravaOAuthRedirectURI,
+	}, nil
+}
+
+func stravaOAuthCallbackHandler(runtime *stravaRuntime) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.Header().Set("Allow", http.MethodGet)
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		query := r.URL.Query()
+		if providerError := query.Get("error"); providerError != "" {
+			http.Error(w, "strava authorization failed", http.StatusBadRequest)
+			return
+		}
+		response, err := runtime.OAuth.CompleteOAuthCallback(r.Context(), strava.CompleteOAuthCallbackRequest{
+			State:       query.Get("state"),
+			Code:        query.Get("code"),
+			RedirectURI: runtime.RedirectURI,
+		})
+		if err != nil {
+			http.Error(w, "strava authorization callback failed", http.StatusBadRequest)
+			return
+		}
+		backfillResult, err := runtime.Backfill.RunInitialBackfill(r.Context(), strava.RunBackfillRequest{
+			ProviderConnectionID: response.Connection.ID,
+		})
+		if err != nil && backfillResult.Status != strava.BackfillStatusDeferred && backfillResult.Status != strava.BackfillStatusPartial {
+			log.Printf("strava initial backfill failed provider_connection_id=%s status=%s error=%v", response.Connection.ID, backfillResult.Status, err)
+		}
+		if err := completeStravaBackfillImports(r.Context(), runtime.Store, backfillResult); err != nil {
+			log.Printf("strava initial backfill completion failed provider_connection_id=%s error=%v", response.Connection.ID, err)
+		}
+
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("Strava connected\n"))
+	}
+}
+
+func completeStravaBackfillImports(ctx context.Context, store repository.Store, backfill strava.BackfillResult) error {
+	if store == nil {
+		return fmt.Errorf("repository store is required")
+	}
+	currentPlan := app.CurrentPlanWeekService{
+		Store:   store,
+		Planner: planning.NewWeeklyPlanner(),
+	}
+	matcher := app.ProviderActivityMatchService{Store: store}
+	completer := app.ProviderActivityCompletionService{Store: store}
+
+	for _, importResult := range backfill.Imports {
+		if importResult.ImportedActivity == nil {
+			continue
+		}
+		activity := *importResult.ImportedActivity
+		goal, err := currentGoalForActivity(ctx, store, activity)
+		if err != nil {
+			return err
+		}
+		plan, err := currentPlan.GetCurrentPlanWeek(ctx, app.GetCurrentPlanWeekRequest{
+			AthleteID:      activity.AthleteID,
+			GoalID:         goal.ID,
+			TargetWeekDate: activity.StartedAt,
+		})
+		if err != nil {
+			return fmt.Errorf("load current plan week for imported activity %q: %w", activity.ID, err)
+		}
+		match, err := matcher.MatchProviderActivity(ctx, app.MatchProviderActivityRequest{
+			ImportedActivity: activity,
+			PlanWeek:         plan.PlanWeek,
+		})
+		if err != nil {
+			return fmt.Errorf("match imported activity %q: %w", activity.ID, err)
+		}
+		if match.WorkoutMatch.Status != domain.WorkoutMatchStatusMatched {
+			continue
+		}
+		if _, err := completer.CompleteMatchedProviderActivity(ctx, app.CompleteMatchedProviderActivityRequest{
+			WorkoutMatch:     match.WorkoutMatch,
+			ImportedActivity: activity,
+			PlanWeek:         match.PlanWeek,
+			PlannedWorkout:   match.PlannedWorkout,
+		}); err != nil {
+			return fmt.Errorf("complete imported activity %q: %w", activity.ID, err)
+		}
+	}
+	return nil
+}
+
+func currentGoalForActivity(ctx context.Context, store repository.Store, activity domain.ImportedActivity) (domain.TrainingGoal, error) {
+	goal, err := store.GetCurrentTrainingGoal(ctx, activity.AthleteID)
+	if err != nil {
+		return domain.TrainingGoal{}, fmt.Errorf("get current training goal for athlete %q: %w", activity.AthleteID, err)
+	}
+	return goal, nil
 }

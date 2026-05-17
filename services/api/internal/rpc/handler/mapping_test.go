@@ -136,6 +136,51 @@ func TestProviderConnectionRequestsToApp(t *testing.T) {
 	}
 }
 
+func TestStravaProviderConnectionRequestsToApp(t *testing.T) {
+	statusRequest, err := getProviderConnectionStatusRequestToApp(&rpcv1.GetProviderConnectionStatusRequest{
+		AthleteId:            "athlete-1",
+		Provider:             rpcv1.Provider_PROVIDER_STRAVA,
+		ProviderConnectionId: "connection-1",
+	})
+	if err != nil {
+		t.Fatalf("getProviderConnectionStatusRequestToApp returned error: %v", err)
+	}
+	if statusRequest.Provider != app.ProviderStrava {
+		t.Fatalf("Provider = %q, want strava", statusRequest.Provider)
+	}
+
+	startRequest, err := startProviderConnectionRequestToApp(&rpcv1.StartProviderConnectionRequest{
+		AthleteId:   "athlete-1",
+		Provider:    rpcv1.Provider_PROVIDER_STRAVA,
+		RedirectUri: "runthread://provider/strava/callback",
+	})
+	if err != nil {
+		t.Fatalf("startProviderConnectionRequestToApp returned error: %v", err)
+	}
+	if startRequest.Provider != app.ProviderStrava {
+		t.Fatalf("Provider = %q, want strava", startRequest.Provider)
+	}
+	if startRequest.RedirectURI != "runthread://provider/strava/callback" {
+		t.Fatalf("RedirectURI = %q, want callback", startRequest.RedirectURI)
+	}
+}
+
+func TestStravaProviderConnectionResponseFromApp(t *testing.T) {
+	response := getProviderConnectionStatusResponseFromApp(app.GetProviderConnectionStatusResponse{
+		Connection: repository.ProviderConnection{
+			ID:        "connection-1",
+			AthleteID: "athlete-1",
+			Provider:  app.ProviderStrava,
+			Status:    repository.ProviderConnectionStatusPending,
+		},
+		HasConnection: true,
+	})
+
+	if response.GetConnection().GetProvider() != rpcv1.Provider_PROVIDER_STRAVA {
+		t.Fatalf("provider = %s, want strava", response.GetConnection().GetProvider())
+	}
+}
+
 func TestProviderConnectionResponseFromApp(t *testing.T) {
 	connectedAt := time.Date(2026, time.June, 5, 9, 0, 0, 0, time.UTC)
 	response := getProviderConnectionStatusResponseFromApp(app.GetProviderConnectionStatusResponse{

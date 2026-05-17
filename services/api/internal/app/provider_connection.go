@@ -13,11 +13,17 @@ import (
 
 const (
 	ProviderGarmin = "garmin"
+	ProviderStrava = "strava"
 )
 
 type ProviderConnectionService struct {
-	Store repository.ProviderStore
-	Now   func() time.Time
+	Store            repository.ProviderStore
+	ProviderStarters map[string]ProviderConnectionStarter
+	Now              func() time.Time
+}
+
+type ProviderConnectionStarter interface {
+	StartProviderConnection(context.Context, StartProviderConnectionRequest) (StartProviderConnectionResponse, error)
 }
 
 type GetProviderConnectionStatusRequest struct {
@@ -85,6 +91,10 @@ func (s ProviderConnectionService) StartProviderConnection(ctx context.Context, 
 		return StartProviderConnectionResponse{}, err
 	}
 
+	if starter := s.ProviderStarters[req.Provider]; starter != nil {
+		return starter.StartProviderConnection(ctx, req)
+	}
+
 	pending, found, err := s.pendingConnection(ctx, req.AthleteID, req.Provider)
 	if err != nil {
 		return StartProviderConnectionResponse{}, err
@@ -124,7 +134,7 @@ func (s ProviderConnectionService) validateProviderRequest(athleteID string, pro
 	if provider == "" {
 		return fmt.Errorf("provider is required")
 	}
-	if provider != ProviderGarmin {
+	if provider != ProviderGarmin && provider != ProviderStrava {
 		return fmt.Errorf("unsupported provider %q", provider)
 	}
 	return nil

@@ -55,6 +55,14 @@ func (s *Store) GetTrainingGoal(ctx context.Context, id string) (domain.Training
 	return s.TrainingGoals.GetTrainingGoal(ctx, id)
 }
 
+func (s *Store) GetCurrentTrainingGoal(ctx context.Context, athleteID string) (domain.TrainingGoal, error) {
+	currentGoals, ok := s.TrainingGoals.(repository.CurrentTrainingGoalRepository)
+	if !ok {
+		return domain.TrainingGoal{}, fmt.Errorf("current training goal repository is required")
+	}
+	return currentGoals.GetCurrentTrainingGoal(ctx, athleteID)
+}
+
 func (s *Store) SavePlanWeek(ctx context.Context, week domain.PlanWeek) error {
 	return s.PlanWeeks.SavePlanWeek(ctx, week)
 }

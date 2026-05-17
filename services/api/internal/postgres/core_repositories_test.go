@@ -9,6 +9,7 @@ import (
 
 	"github.com/runthread/runthread/services/api/internal/domain"
 	postgresdb "github.com/runthread/runthread/services/api/internal/postgres/db"
+	"github.com/runthread/runthread/services/api/internal/repository"
 )
 
 func TestTrainingGoalToCreateParams(t *testing.T) {
@@ -89,6 +90,10 @@ func TestTrainingGoalFromDB(t *testing.T) {
 	if goal.Notes != "10k" {
 		t.Fatalf("Notes = %q, want 10k", goal.Notes)
 	}
+}
+
+func TestTrainingGoalRepositoryImplementsCurrentTrainingGoalRepository(t *testing.T) {
+	var _ repository.CurrentTrainingGoalRepository = (*TrainingGoalRepository)(nil)
 }
 
 func TestPlanWeekToCreateParams(t *testing.T) {

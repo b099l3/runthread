@@ -20,6 +20,7 @@ type TrainingGoalRepository struct {
 }
 
 var _ repository.TrainingGoalRepository = (*TrainingGoalRepository)(nil)
+var _ repository.CurrentTrainingGoalRepository = (*TrainingGoalRepository)(nil)
 
 func NewTrainingGoalRepository(db *sql.DB) *TrainingGoalRepository {
 	return &TrainingGoalRepository{
@@ -73,6 +74,26 @@ func (r *TrainingGoalRepository) GetTrainingGoal(ctx context.Context, id string)
 		return domain.TrainingGoal{}, fmt.Errorf("get training goal: %w", err)
 	}
 	return trainingGoalFromDB(row), nil
+}
+
+func (r *TrainingGoalRepository) GetCurrentTrainingGoal(ctx context.Context, athleteID string) (domain.TrainingGoal, error) {
+	if err := ctx.Err(); err != nil {
+		return domain.TrainingGoal{}, err
+	}
+
+	parsedAthleteID, err := uuid.Parse(athleteID)
+	if err != nil {
+		return domain.TrainingGoal{}, fmt.Errorf("parse training goal athlete id: %w", err)
+	}
+
+	rows, err := r.queries.ListTrainingGoalsByAthlete(ctx, parsedAthleteID)
+	if err != nil {
+		return domain.TrainingGoal{}, fmt.Errorf("list training goals by athlete: %w", err)
+	}
+	if len(rows) == 0 {
+		return domain.TrainingGoal{}, repository.ErrNotFound
+	}
+	return trainingGoalFromDB(rows[0]), nil
 }
 
 type PlanWeekRepository struct {

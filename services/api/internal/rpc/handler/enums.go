@@ -38,6 +38,8 @@ func providerToApp(value rpcv1.Provider) string {
 	switch value {
 	case rpcv1.Provider_PROVIDER_GARMIN:
 		return "garmin"
+	case rpcv1.Provider_PROVIDER_STRAVA:
+		return "strava"
 	default:
 		return ""
 	}
@@ -47,6 +49,8 @@ func providerFromRepository(value string) rpcv1.Provider {
 	switch value {
 	case "garmin":
 		return rpcv1.Provider_PROVIDER_GARMIN
+	case "strava":
+		return rpcv1.Provider_PROVIDER_STRAVA
 	default:
 		return rpcv1.Provider_PROVIDER_UNSPECIFIED
 	}

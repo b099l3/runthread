@@ -2,20 +2,25 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"connectrpc.com/connect"
 
 	"github.com/runthread/runthread/services/api/internal/app"
+	"github.com/runthread/runthread/services/api/internal/config"
 	"github.com/runthread/runthread/services/api/internal/domain"
 	"github.com/runthread/runthread/services/api/internal/planning"
+	"github.com/runthread/runthread/services/api/internal/providers/strava"
 	"github.com/runthread/runthread/services/api/internal/repository"
 	rpcv1 "github.com/runthread/runthread/services/api/internal/rpc/runthread/v1"
 	"github.com/runthread/runthread/services/api/internal/rpc/runthread/v1/runthreadv1connect"
+	"github.com/runthread/runthread/services/api/internal/startup"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -184,6 +189,200 @@ func TestProviderConnectionConnectEndpoints(t *testing.T) {
 	}
 }
 
+func TestStravaStartProviderConnectionReturnsOAuthURLWhenConfigured(t *testing.T) {
+	stravaAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer stravaAPI.Close()
+
+	store := repository.NewInMemoryStore()
+	services, err := app.NewServices(store)
+	if err != nil {
+		t.Fatalf("NewServices returned error: %v", err)
+	}
+	cfg := config.Config{
+		StravaClientID:         "client-1",
+		StravaClientSecret:     "secret-1",
+		StravaOAuthRedirectURI: "runthread://provider/strava/callback",
+		StravaAPIBaseURL:       stravaAPI.URL,
+	}
+	runtime, err := composeStravaRuntime(cfg, store)
+	if err != nil {
+		t.Fatalf("composeStravaRuntime returned error: %v", err)
+	}
+	services.ProviderConnect.ProviderStarters = map[string]app.ProviderConnectionStarter{
+		app.ProviderStrava: testStravaConnectionStarter(runtime.OAuth, cfg.StravaOAuthRedirectURI),
+	}
+
+	server := httptest.NewServer(newMux(services, muxOptions{
+		strava: runtime,
+	}))
+	defer server.Close()
+
+	client := runthreadv1connect.NewRunthreadServiceClient(server.Client(), server.URL)
+	response, err := client.StartProviderConnection(context.Background(), connect.NewRequest(&rpcv1.StartProviderConnectionRequest{
+		AthleteId: "athlete-1",
+		Provider:  rpcv1.Provider_PROVIDER_STRAVA,
+	}))
+	if err != nil {
+		t.Fatalf("StartProviderConnection returned error: %v", err)
+	}
+
+	if !response.Msg.GetOauthReady() {
+		t.Fatal("oauth_ready = false, want true")
+	}
+	if !strings.HasPrefix(response.Msg.GetAuthorizationUrl(), stravaAPI.URL+"/oauth/authorize") {
+		t.Fatalf("authorization_url = %q, want Strava API base", response.Msg.GetAuthorizationUrl())
+	}
+}
+
+func TestStravaOAuthCallbackConnectsPendingConnection(t *testing.T) {
+	stravaAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/oauth/token":
+			if err := r.ParseForm(); err != nil {
+				t.Fatalf("ParseForm returned error: %v", err)
+			}
+			if r.Form.Get("code") != "auth-code-1" {
+				t.Fatalf("code = %q, want auth-code-1", r.Form.Get("code"))
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"access_token":  "access-token",
+				"refresh_token": "refresh-token",
+				"expires_at":    time.Date(2026, time.June, 9, 16, 0, 0, 0, time.UTC).Unix(),
+				"scope":         "activity:read_all",
+				"athlete": map[string]any{
+					"id": 12345,
+				},
+			})
+		case "/api/v3/athlete/activities":
+			_ = json.NewEncoder(w).Encode([]map[string]any{
+				{"id": 98765},
+			})
+		case "/api/v3/activities/98765":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id":                98765,
+				"athlete":           map[string]any{"id": 12345},
+				"sport_type":        "Run",
+				"name":              "Morning Run",
+				"start_date":        "2026-06-09T07:30:00Z",
+				"elapsed_time":      2460,
+				"moving_time":       2460,
+				"distance":          6800,
+				"average_heartrate": 150,
+			})
+		default:
+			http.NotFound(w, r)
+			return
+		}
+	}))
+	defer stravaAPI.Close()
+
+	store := repository.NewInMemoryStore()
+	if err := startup.SeedDemoData(context.Background(), store); err != nil {
+		t.Fatalf("SeedDemoData returned error: %v", err)
+	}
+	currentGoal := testGoal("athlete-1")
+	currentGoal.ID = "goal-current-strava"
+	currentGoal.Notes = "Current goal used by Strava completion."
+	if err := store.SaveTrainingGoal(context.Background(), currentGoal); err != nil {
+		t.Fatalf("SaveTrainingGoal returned error: %v", err)
+	}
+	cfg := config.Config{
+		StravaClientID:         "client-1",
+		StravaClientSecret:     "secret-1",
+		StravaOAuthRedirectURI: "runthread://provider/strava/callback",
+		StravaAPIBaseURL:       stravaAPI.URL,
+	}
+	runtime, err := composeStravaRuntime(cfg, store)
+	if err != nil {
+		t.Fatalf("composeStravaRuntime returned error: %v", err)
+	}
+	services, err := app.NewServices(store)
+	if err != nil {
+		t.Fatalf("NewServices returned error: %v", err)
+	}
+	services.ProviderConnect.ProviderStarters = map[string]app.ProviderConnectionStarter{
+		app.ProviderStrava: testStravaConnectionStarter(runtime.OAuth, cfg.StravaOAuthRedirectURI),
+	}
+	server := httptest.NewServer(newMux(services, muxOptions{
+		strava: runtime,
+	}))
+	defer server.Close()
+
+	client := runthreadv1connect.NewRunthreadServiceClient(server.Client(), server.URL)
+	start, err := client.StartProviderConnection(context.Background(), connect.NewRequest(&rpcv1.StartProviderConnectionRequest{
+		AthleteId: "athlete-1",
+		Provider:  rpcv1.Provider_PROVIDER_STRAVA,
+	}))
+	if err != nil {
+		t.Fatalf("StartProviderConnection returned error: %v", err)
+	}
+
+	response, err := server.Client().Get(server.URL + "/providers/strava/oauth/callback?state=" + start.Msg.GetState() + "&code=auth-code-1")
+	if err != nil {
+		t.Fatalf("GET callback returned error: %v", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(response.Body)
+		t.Fatalf("status = %d body = %q, want 200", response.StatusCode, string(body))
+	}
+
+	status, err := client.GetProviderConnectionStatus(context.Background(), connect.NewRequest(&rpcv1.GetProviderConnectionStatusRequest{
+		AthleteId: "athlete-1",
+		Provider:  rpcv1.Provider_PROVIDER_STRAVA,
+	}))
+	if err != nil {
+		t.Fatalf("GetProviderConnectionStatus returned error: %v", err)
+	}
+	if status.Msg.GetConnection().GetStatus() != rpcv1.ProviderConnectionStatus_PROVIDER_CONNECTION_STATUS_CONNECTED {
+		t.Fatalf("status = %s, want connected", status.Msg.GetConnection().GetStatus())
+	}
+	if status.Msg.GetConnection().GetProviderUserId() != "12345" {
+		t.Fatalf("provider user = %q, want 12345", status.Msg.GetConnection().GetProviderUserId())
+	}
+	activities, err := store.ListProviderActivitiesByAthlete(context.Background(), "athlete-1")
+	if err != nil {
+		t.Fatalf("ListProviderActivitiesByAthlete returned error: %v", err)
+	}
+	if len(activities) != 1 {
+		t.Fatalf("provider activities = %d, want 1", len(activities))
+	}
+	if activities[0].ProviderActivityID != "98765" {
+		t.Fatalf("provider activity id = %q, want 98765", activities[0].ProviderActivityID)
+	}
+	if activities[0].ImportedActivityID == "" {
+		t.Fatal("expected imported activity id")
+	}
+	imported, err := store.GetImportedActivity(context.Background(), activities[0].ImportedActivityID)
+	if err != nil {
+		t.Fatalf("GetImportedActivity returned error: %v", err)
+	}
+	if imported.AthleteID != "athlete-1" {
+		t.Fatalf("imported athlete = %q, want Runthread athlete", imported.AthleteID)
+	}
+	matches, err := store.GetWorkoutMatch(context.Background(), "match-generated-2-easy-"+imported.ID)
+	if err != nil {
+		t.Fatalf("GetWorkoutMatch returned error: %v", err)
+	}
+	if matches.Status != domain.WorkoutMatchStatusMatched {
+		t.Fatalf("match status = %q, want matched", matches.Status)
+	}
+	result, err := store.GetWorkoutResult(context.Background(), "result-"+matches.ID)
+	if err != nil {
+		t.Fatalf("GetWorkoutResult returned error: %v", err)
+	}
+	if result.ImportedActivityID != imported.ID {
+		t.Fatalf("result imported activity = %q, want %q", result.ImportedActivityID, imported.ID)
+	}
+	week, err := store.GetPlanWeek(context.Background(), "generated-week")
+	if err != nil {
+		t.Fatalf("GetPlanWeek returned error: %v", err)
+	}
+	if week.GoalID != currentGoal.ID {
+		t.Fatalf("plan week goal id = %q, want current goal", week.GoalID)
+	}
+}
+
 const dateLayout = "2006-01-02"
 
 func testServices(t *testing.T) app.Services {
@@ -194,6 +393,14 @@ func testServices(t *testing.T) app.Services {
 		t.Fatalf("NewServices returned error: %v", err)
 	}
 	return services
+}
+
+func testStravaConnectionStarter(oauth *strava.OAuthService, redirectURI string) app.ProviderConnectionStarter {
+	return strava.ConnectionStarter{
+		OAuth:       oauth,
+		RedirectURI: redirectURI,
+		Scopes:      []string{"activity:read_all"},
+	}
 }
 
 func testProfile() domain.AthleteProfile {
