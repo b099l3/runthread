@@ -101,7 +101,7 @@ func (f HTTPActivityFetcher) get(ctx context.Context, connection repository.Prov
 	}
 	response, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("call Strava API: %w", err)
+		return nil, fmt.Errorf("%w: call Strava API: %v", ErrTemporaryFailure, err)
 	}
 	defer response.Body.Close()
 
@@ -111,6 +111,9 @@ func (f HTTPActivityFetcher) get(ctx context.Context, connection repository.Prov
 	}
 	if response.StatusCode == http.StatusTooManyRequests {
 		return nil, ErrRateLimited
+	}
+	if response.StatusCode >= 500 {
+		return nil, fmt.Errorf("%w: Strava API returned status %d: %s", ErrTemporaryFailure, response.StatusCode, strings.TrimSpace(string(body)))
 	}
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return nil, fmt.Errorf("Strava API returned status %d: %s", response.StatusCode, strings.TrimSpace(string(body)))

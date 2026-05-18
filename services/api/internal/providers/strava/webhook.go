@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/runthread/runthread/services/api/internal/providerimport"
@@ -46,6 +47,8 @@ type WebhookEvent struct {
 	ObjectID        string `json:"object_id"`
 	ProviderUserID  string `json:"owner_id"`
 	ProviderUserID2 string `json:"provider_user_id"`
+	SubscriptionID  string `json:"subscription_id"`
+	EventTimeUnix   int64  `json:"event_time"`
 	ReceivedAtUnix  int64  `json:"received_at"`
 }
 
@@ -58,6 +61,8 @@ const (
 	WebhookActionDuplicate WebhookAction = "duplicate"
 	WebhookActionFailed    WebhookAction = "failed"
 )
+
+const RetryableWebhookFailurePrefix = "retryable Strava webhook fetch failure"
 
 type WebhookResult struct {
 	Action WebhookAction
@@ -80,6 +85,7 @@ func (s WebhookService) HandleWebhook(ctx context.Context, req HandleWebhookRequ
 	if err := json.Unmarshal(req.Body, &event); err != nil {
 		return WebhookResult{Action: WebhookActionFailed}, fmt.Errorf("decode Strava webhook: %w", err)
 	}
+	event.normalise()
 	if err := event.validate(); err != nil {
 		return WebhookResult{Action: WebhookActionFailed, Event: event}, err
 	}
@@ -108,6 +114,10 @@ func (s WebhookService) HandleWebhook(ctx context.Context, req HandleWebhookRequ
 }
 
 func (s WebhookService) routeEvent(ctx context.Context, connection repository.ProviderConnection, event WebhookEvent) (WebhookResult, error) {
+	if event.ObjectType == "athlete" {
+		return s.recordAthleteEvent(ctx, connection, event)
+	}
+
 	switch event.AspectType {
 	case "create", "update":
 		detail, err := s.Fetcher.FetchActivityDetail(ctx, ActivityDetailRequest{
@@ -140,6 +150,21 @@ func (s WebhookService) routeEvent(ctx context.Context, connection repository.Pr
 		result := WebhookResult{Action: WebhookActionIgnored, Event: event, Import: &importResult}
 		return result, err
 	}
+}
+
+func (s WebhookService) recordAthleteEvent(ctx context.Context, connection repository.ProviderConnection, event WebhookEvent) (WebhookResult, error) {
+	if event.AspectType != "delete" {
+		return WebhookResult{Action: WebhookActionIgnored, Event: event}, nil
+	}
+	now := s.now()
+	connection.Status = repository.ProviderConnectionStatusDisconnected
+	connection.DisconnectedAt = now
+	connection.UpdatedAt = now
+	connection.LastError = "Strava access revoked"
+	if err := s.Providers.SaveProviderConnection(ctx, connection); err != nil {
+		return WebhookResult{Action: WebhookActionFailed, Event: event}, fmt.Errorf("record Strava athlete disconnect: %w", err)
+	}
+	return WebhookResult{Action: WebhookActionDeleted, Event: event}, nil
 }
 
 func (s WebhookService) importWebhookActivity(ctx context.Context, connection repository.ProviderConnection, event WebhookEvent, payload MockActivityPayload) (providerimport.ImportResult, bool, bool, error) {
@@ -176,8 +201,18 @@ func (s WebhookService) importWebhookActivity(ctx context.Context, connection re
 
 func (s WebhookService) recordWebhookDelete(ctx context.Context, connection repository.ProviderConnection, event WebhookEvent) (providerimport.ImportResult, error) {
 	req := s.webhookImportRequest(connection, event)
-	req.IgnoreReason = "Strava activity deleted"
-	return s.Importer.ImportActivity(ctx, req)
+	req.IgnoreReason = "Strava activity deleted; existing imported activity preserved for review"
+	result, err := s.Importer.ImportActivity(ctx, req)
+	if err != nil {
+		return result, err
+	}
+	result.ProviderActivity.Status = repository.ProviderActivityStatusDeleted
+	result.ProviderActivity.LastSyncedAt = s.now()
+	result.ProviderActivity.LastError = req.IgnoreReason
+	if err := s.Providers.SaveProviderActivity(ctx, result.ProviderActivity); err != nil {
+		return result, fmt.Errorf("mark Strava provider activity deleted: %w", err)
+	}
+	return result, nil
 }
 
 func (s WebhookService) recordWebhookIgnored(ctx context.Context, connection repository.ProviderConnection, event WebhookEvent, reason string) (providerimport.ImportResult, error) {
@@ -189,12 +224,19 @@ func (s WebhookService) recordWebhookIgnored(ctx context.Context, connection rep
 func (s WebhookService) recordWebhookFailure(ctx context.Context, connection repository.ProviderConnection, event WebhookEvent, cause error) (WebhookResult, error) {
 	req := s.webhookImportRequest(connection, event)
 	req.FailureReason = cause.Error()
+	if IsRetryableWebhookError(cause) {
+		req.FailureReason = RetryableWebhookFailurePrefix + ": " + cause.Error()
+	}
 	result, err := s.Importer.ImportActivity(ctx, req)
 	wrapped := fmt.Errorf("fetch Strava webhook activity detail: %w", cause)
 	if err != nil {
 		wrapped = fmt.Errorf("%w: %v", wrapped, err)
 	}
 	return WebhookResult{Action: WebhookActionFailed, Event: event, Import: &result}, wrapped
+}
+
+func IsRetryableWebhookError(err error) bool {
+	return errors.Is(err, ErrRateLimited) || errors.Is(err, ErrTemporaryFailure)
 }
 
 func (s WebhookService) webhookImportRequest(connection repository.ProviderConnection, event WebhookEvent) providerimport.ImportRequest {
@@ -259,7 +301,7 @@ func (e WebhookEvent) validate() error {
 	if e.EventID == "" {
 		return errors.New("strava webhook event id is required")
 	}
-	if e.ObjectType != "activity" {
+	if e.ObjectType != "activity" && e.ObjectType != "athlete" {
 		return fmt.Errorf("unsupported Strava webhook object type %q", e.ObjectType)
 	}
 	if e.ObjectID == "" {
@@ -275,12 +317,74 @@ func (e WebhookEvent) providerUserID() string {
 	if e.ProviderUserID != "" {
 		return e.ProviderUserID
 	}
-	return e.ProviderUserID2
+	if e.ProviderUserID2 != "" {
+		return e.ProviderUserID2
+	}
+	if e.ObjectType == "athlete" {
+		return e.ObjectID
+	}
+	return ""
 }
 
 func (e WebhookEvent) receivedAt(fallback time.Time) time.Time {
 	if e.ReceivedAtUnix <= 0 {
+		if e.EventTimeUnix > 0 {
+			return time.Unix(e.EventTimeUnix, 0).UTC()
+		}
 		return fallback
 	}
 	return time.Unix(e.ReceivedAtUnix, 0).UTC()
+}
+
+func (e *WebhookEvent) normalise() {
+	if e.EventID == "" && e.SubscriptionID != "" && e.ObjectID != "" && e.AspectType != "" {
+		timestamp := e.EventTimeUnix
+		if timestamp <= 0 {
+			timestamp = e.ReceivedAtUnix
+		}
+		e.EventID = providerimport.DeterministicID("runthread:strava-webhook-event", e.SubscriptionID, e.ObjectType, e.ObjectID, e.AspectType, strconv.FormatInt(timestamp, 10))
+	}
+}
+
+func (e *WebhookEvent) UnmarshalJSON(data []byte) error {
+	type rawWebhookEvent struct {
+		EventID         json.RawMessage `json:"event_id"`
+		AspectType      string          `json:"aspect_type"`
+		ObjectType      string          `json:"object_type"`
+		ObjectID        json.RawMessage `json:"object_id"`
+		ProviderUserID  json.RawMessage `json:"owner_id"`
+		ProviderUserID2 json.RawMessage `json:"provider_user_id"`
+		SubscriptionID  json.RawMessage `json:"subscription_id"`
+		EventTimeUnix   int64           `json:"event_time"`
+		ReceivedAtUnix  int64           `json:"received_at"`
+	}
+	var raw rawWebhookEvent
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	e.EventID = webhookString(raw.EventID)
+	e.AspectType = raw.AspectType
+	e.ObjectType = raw.ObjectType
+	e.ObjectID = webhookString(raw.ObjectID)
+	e.ProviderUserID = webhookString(raw.ProviderUserID)
+	e.ProviderUserID2 = webhookString(raw.ProviderUserID2)
+	e.SubscriptionID = webhookString(raw.SubscriptionID)
+	e.EventTimeUnix = raw.EventTimeUnix
+	e.ReceivedAtUnix = raw.ReceivedAtUnix
+	return nil
+}
+
+func webhookString(value json.RawMessage) string {
+	if len(value) == 0 || string(value) == "null" {
+		return ""
+	}
+	var stringValue string
+	if err := json.Unmarshal(value, &stringValue); err == nil {
+		return stringValue
+	}
+	var number json.Number
+	if err := json.Unmarshal(value, &number); err == nil {
+		return number.String()
+	}
+	return string(value)
 }

@@ -12,6 +12,7 @@ import (
 )
 
 var ErrRateLimited = errors.New("strava rate limit")
+var ErrTemporaryFailure = errors.New("strava temporary failure")
 
 type ActivityFetcher interface {
 	ListBackfillActivities(ctx context.Context, req BackfillListRequest) ([]MockActivitySummary, error)

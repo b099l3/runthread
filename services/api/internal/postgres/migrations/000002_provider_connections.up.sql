@@ -34,7 +34,7 @@ CREATE TABLE provider_activities (
     updated_at timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT provider_activities_provider_non_empty CHECK (provider <> ''),
     CONSTRAINT provider_activities_provider_activity_id_non_empty CHECK (provider_activity_id <> ''),
-    CONSTRAINT provider_activities_status_valid CHECK (status IN ('received', 'normalised', 'ignored', 'failed')),
+    CONSTRAINT provider_activities_status_valid CHECK (status IN ('received', 'normalised', 'ignored', 'failed', 'deleted')),
     CONSTRAINT provider_activities_connection_activity_unique UNIQUE (provider_connection_id, provider_activity_id)
 );
 

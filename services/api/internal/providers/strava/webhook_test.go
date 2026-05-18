@@ -82,7 +82,7 @@ func TestHandleWebhookImportsUpdateEvent(t *testing.T) {
 	}
 }
 
-func TestHandleWebhookRecordsDeleteEventAsIgnoredProviderImport(t *testing.T) {
+func TestHandleWebhookRecordsDeleteEventAsDeletedProviderActivity(t *testing.T) {
 	ctx := context.Background()
 	store := repository.NewInMemoryStore()
 	connection := connectedStravaConnection("connection-1", "athlete-1")
@@ -101,11 +101,51 @@ func TestHandleWebhookRecordsDeleteEventAsIgnoredProviderImport(t *testing.T) {
 	if result.Action != WebhookActionDeleted {
 		t.Fatalf("action = %q, want deleted", result.Action)
 	}
-	if result.Import.ProviderActivity.Status != repository.ProviderActivityStatusIgnored {
-		t.Fatalf("provider activity status = %q, want ignored", result.Import.ProviderActivity.Status)
+	if result.Import.ProviderActivity.Status != repository.ProviderActivityStatusDeleted {
+		t.Fatalf("provider activity status = %q, want deleted", result.Import.ProviderActivity.Status)
 	}
 	if result.Import.ImportEvent.Status != repository.ProviderImportEventStatusIgnored {
 		t.Fatalf("import event status = %q, want ignored", result.Import.ImportEvent.Status)
+	}
+}
+
+func TestHandleWebhookDeletePreservesImportedActivityReferenceForReview(t *testing.T) {
+	ctx := context.Background()
+	store := repository.NewInMemoryStore()
+	connection := connectedStravaConnection("connection-1", "athlete-1")
+	if err := store.SaveProviderConnection(ctx, connection); err != nil {
+		t.Fatalf("SaveProviderConnection returned error: %v", err)
+	}
+	service := testWebhookService(t, store, &fakeActivityFetcher{
+		details: map[string]MockActivityPayload{
+			"strava-activity-1": backfillPayload("strava-activity-1", "Run"),
+		},
+	}, &fakeWebhookVerifier{}, newFakeWebhookDeduper())
+
+	create, err := service.HandleWebhook(ctx, HandleWebhookRequest{
+		Body: webhookBody(t, webhookEvent("event-1", "create", "strava-activity-1")),
+	})
+	if err != nil {
+		t.Fatalf("HandleWebhook create returned error: %v", err)
+	}
+	if create.Import.ImportedActivity == nil {
+		t.Fatal("expected imported activity")
+	}
+
+	deleted, err := service.HandleWebhook(ctx, HandleWebhookRequest{
+		Body: webhookBody(t, webhookEvent("event-2", "delete", "strava-activity-1")),
+	})
+	if err != nil {
+		t.Fatalf("HandleWebhook delete returned error: %v", err)
+	}
+	if deleted.Import.ProviderActivity.Status != repository.ProviderActivityStatusDeleted {
+		t.Fatalf("provider activity status = %q, want deleted", deleted.Import.ProviderActivity.Status)
+	}
+	if deleted.Import.ProviderActivity.ImportedActivityID != create.Import.ImportedActivity.ID {
+		t.Fatalf("imported activity reference = %q, want %q", deleted.Import.ProviderActivity.ImportedActivityID, create.Import.ImportedActivity.ID)
+	}
+	if deleted.Import.ProviderActivity.LastError == "" {
+		t.Fatal("expected delete review reason")
 	}
 }
 
@@ -149,7 +189,7 @@ func TestHandleWebhookRejectsInvalidPayload(t *testing.T) {
 	service := testWebhookService(t, repository.NewInMemoryStore(), &fakeActivityFetcher{}, &fakeWebhookVerifier{}, newFakeWebhookDeduper())
 
 	_, err := service.HandleWebhook(context.Background(), HandleWebhookRequest{
-		Body: []byte(`{"event_id":"event-1","aspect_type":"create","object_type":"athlete"}`),
+		Body: []byte(`{"event_id":"event-1","aspect_type":"create","object_type":"segment","object_id":"segment-1"}`),
 	})
 
 	assertWebhookError(t, err, "unsupported Strava webhook object type")
@@ -177,6 +217,97 @@ func TestHandleWebhookRecordsFetchFailure(t *testing.T) {
 	}
 	if result.Import.ImportEvent.Status != repository.ProviderImportEventStatusFailed {
 		t.Fatalf("import event status = %q, want failed", result.Import.ImportEvent.Status)
+	}
+}
+
+func TestHandleWebhookRecordsRetryableFetchFailureWithoutMarkingEventSeen(t *testing.T) {
+	ctx := context.Background()
+	store := repository.NewInMemoryStore()
+	connection := connectedStravaConnection("connection-1", "athlete-1")
+	if err := store.SaveProviderConnection(ctx, connection); err != nil {
+		t.Fatalf("SaveProviderConnection returned error: %v", err)
+	}
+	deduper := newFakeWebhookDeduper()
+	service := testWebhookService(t, store, &fakeActivityFetcher{detailErr: ErrRateLimited}, &fakeWebhookVerifier{}, deduper)
+
+	result, err := service.HandleWebhook(ctx, HandleWebhookRequest{
+		Body: webhookBody(t, webhookEvent("event-1", "create", "strava-activity-1")),
+	})
+
+	assertWebhookError(t, err, "fetch Strava webhook activity detail")
+	if !IsRetryableWebhookError(err) {
+		t.Fatalf("IsRetryableWebhookError = false, want true for %v", err)
+	}
+	if result.Import == nil {
+		t.Fatal("expected failed import event")
+	}
+	if result.Import.ProviderActivity.Status != repository.ProviderActivityStatusFailed {
+		t.Fatalf("provider activity status = %q, want failed", result.Import.ProviderActivity.Status)
+	}
+	if !strings.Contains(result.Import.ImportEvent.Error, "retryable Strava webhook fetch failure") {
+		t.Fatalf("import event error = %q, want retryable marker", result.Import.ImportEvent.Error)
+	}
+	if deduper.marked != 0 {
+		t.Fatalf("marked events = %d, want 0 so provider can retry delivery", deduper.marked)
+	}
+}
+
+func TestRetryFailedWebhookImportsProcessesRetryableFailure(t *testing.T) {
+	ctx := context.Background()
+	store := repository.NewInMemoryStore()
+	connection := connectedStravaConnection("connection-1", "athlete-1")
+	if err := store.SaveProviderConnection(ctx, connection); err != nil {
+		t.Fatalf("SaveProviderConnection returned error: %v", err)
+	}
+	failedService := testWebhookService(t, store, &fakeActivityFetcher{detailErr: ErrRateLimited}, &fakeWebhookVerifier{}, newFakeWebhookDeduper())
+	_, err := failedService.HandleWebhook(ctx, HandleWebhookRequest{
+		Body: webhookBody(t, webhookEvent("event-1", "create", "strava-activity-1")),
+	})
+	assertWebhookError(t, err, "fetch Strava webhook activity detail")
+
+	retryService := testWebhookService(t, store, &fakeActivityFetcher{
+		details: map[string]MockActivityPayload{
+			"strava-activity-1": backfillPayload("strava-activity-1", "Run"),
+		},
+	}, &fakeWebhookVerifier{}, newFakeWebhookDeduper())
+	result, err := retryService.RetryFailedWebhookImports(ctx, RetryWebhookImportsRequest{})
+	if err != nil {
+		t.Fatalf("RetryFailedWebhookImports returned error: %v", err)
+	}
+	if result.Attempted != 1 || result.Succeeded != 1 || result.Failed != 0 {
+		t.Fatalf("retry result = attempted %d succeeded %d failed %d, want 1/1/0", result.Attempted, result.Succeeded, result.Failed)
+	}
+	if len(result.Imports) != 1 || result.Imports[0].ImportedActivity == nil {
+		t.Fatalf("expected retry import with imported activity, got %#v", result.Imports)
+	}
+	storedEvent, err := store.GetProviderImportEvent(ctx, result.Imports[0].ImportEvent.ID)
+	if err != nil {
+		t.Fatalf("GetProviderImportEvent returned error: %v", err)
+	}
+	if storedEvent.Status != repository.ProviderImportEventStatusProcessed {
+		t.Fatalf("stored event status = %q, want processed", storedEvent.Status)
+	}
+}
+
+func TestRetryFailedWebhookImportsSkipsNonRetryableFailure(t *testing.T) {
+	ctx := context.Background()
+	store := repository.NewInMemoryStore()
+	connection := connectedStravaConnection("connection-1", "athlete-1")
+	if err := store.SaveProviderConnection(ctx, connection); err != nil {
+		t.Fatalf("SaveProviderConnection returned error: %v", err)
+	}
+	service := testWebhookService(t, store, &fakeActivityFetcher{detailErr: errors.New("permanent fetch failure")}, &fakeWebhookVerifier{}, newFakeWebhookDeduper())
+	_, err := service.HandleWebhook(ctx, HandleWebhookRequest{
+		Body: webhookBody(t, webhookEvent("event-1", "create", "strava-activity-1")),
+	})
+	assertWebhookError(t, err, "fetch Strava webhook activity detail")
+
+	result, err := service.RetryFailedWebhookImports(ctx, RetryWebhookImportsRequest{})
+	if err != nil {
+		t.Fatalf("RetryFailedWebhookImports returned error: %v", err)
+	}
+	if result.Attempted != 0 || result.Skipped != 1 {
+		t.Fatalf("retry result = attempted %d skipped %d, want 0/1", result.Attempted, result.Skipped)
 	}
 }
 

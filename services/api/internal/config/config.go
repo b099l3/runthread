@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -16,27 +17,33 @@ const (
 	EnvStravaOAuthRedirectURI   = "STRAVA_OAUTH_REDIRECT_URI"
 	EnvStravaWebhookVerifyToken = "STRAVA_WEBHOOK_VERIFY_TOKEN"
 	EnvStravaAPIBaseURL         = "STRAVA_API_BASE_URL"
+	EnvProviderTokenKey         = "PROVIDER_TOKEN_ENCRYPTION_KEY"
+	EnvStravaWebhookRetrySecs   = "STRAVA_WEBHOOK_RETRY_INTERVAL_SECONDS"
 )
 
 type Config struct {
-	ServerAddress            string
-	DatabaseURL              string
-	StravaClientID           string
-	StravaClientSecret       string
-	StravaOAuthRedirectURI   string
-	StravaWebhookVerifyToken string
-	StravaAPIBaseURL         string
+	ServerAddress                     string
+	DatabaseURL                       string
+	StravaClientID                    string
+	StravaClientSecret                string
+	StravaOAuthRedirectURI            string
+	StravaWebhookVerifyToken          string
+	StravaAPIBaseURL                  string
+	ProviderTokenKey                  string
+	StravaWebhookRetryIntervalSeconds int
 }
 
 func Load() Config {
 	return Config{
-		ServerAddress:            stringFromEnv(EnvServerAddress, DefaultServerAddress),
-		DatabaseURL:              strings.TrimSpace(os.Getenv(EnvDatabaseURL)),
-		StravaClientID:           strings.TrimSpace(os.Getenv(EnvStravaClientID)),
-		StravaClientSecret:       strings.TrimSpace(os.Getenv(EnvStravaClientSecret)),
-		StravaOAuthRedirectURI:   strings.TrimSpace(os.Getenv(EnvStravaOAuthRedirectURI)),
-		StravaWebhookVerifyToken: strings.TrimSpace(os.Getenv(EnvStravaWebhookVerifyToken)),
-		StravaAPIBaseURL:         stringFromEnv(EnvStravaAPIBaseURL, DefaultStravaAPIBaseURL),
+		ServerAddress:                     stringFromEnv(EnvServerAddress, DefaultServerAddress),
+		DatabaseURL:                       strings.TrimSpace(os.Getenv(EnvDatabaseURL)),
+		StravaClientID:                    strings.TrimSpace(os.Getenv(EnvStravaClientID)),
+		StravaClientSecret:                strings.TrimSpace(os.Getenv(EnvStravaClientSecret)),
+		StravaOAuthRedirectURI:            strings.TrimSpace(os.Getenv(EnvStravaOAuthRedirectURI)),
+		StravaWebhookVerifyToken:          strings.TrimSpace(os.Getenv(EnvStravaWebhookVerifyToken)),
+		StravaAPIBaseURL:                  stringFromEnv(EnvStravaAPIBaseURL, DefaultStravaAPIBaseURL),
+		ProviderTokenKey:                  strings.TrimSpace(os.Getenv(EnvProviderTokenKey)),
+		StravaWebhookRetryIntervalSeconds: positiveIntFromEnv(EnvStravaWebhookRetrySecs),
 	}
 }
 
@@ -54,4 +61,16 @@ func stringFromEnv(key string, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func positiveIntFromEnv(key string) int {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return 0
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed < 0 {
+		return 0
+	}
+	return parsed
 }

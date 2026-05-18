@@ -50,4 +50,7 @@ func TestNewStoreComposesRepositories(t *testing.T) {
 	if store.AdaptationEvents == nil {
 		t.Fatal("AdaptationEvents repository is nil")
 	}
+	if store.ProviderStore == nil {
+		t.Fatal("ProviderStore is nil")
+	}
 }

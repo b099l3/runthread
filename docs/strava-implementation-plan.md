@@ -29,13 +29,13 @@ Already present:
 - Backend-only Strava webhook service shape with verifier, deduper, create/update/delete routing, and provider import persistence.
 - Provider persistence tables and repository boundaries for provider connections, provider activities, provider payloads, and import events.
 - Provider-neutral app services for import, match, workout result creation, and deterministic adaptation.
+- Strava as a first-class RPC/mobile provider enum.
+- Server wiring for Strava OAuth, token refresh, API activity fetch, initial backfill, provider import, match, workout result creation, and current-goal plan adaptation.
+- Durable Postgres-backed Strava token storage with AES-GCM encryption and a required provider token encryption key in Postgres deployments.
 
 Still missing:
 
-- Strava as a first-class RPC/mobile provider enum.
-- Production Strava configuration and server wiring.
-- Real Strava code exchange, token refresh, token storage, API client, and webhook endpoint.
-- Startup composition that wires Strava provider services to Postgres-backed repositories.
+- Provider-facing Strava webhook endpoint wired into the HTTP server.
 - Mobile Strava connection UX.
 - Integration tests against Postgres-backed provider persistence and fake Strava HTTP behavior.
 
@@ -73,6 +73,8 @@ Tests:
 ### Phase 2: OAuth and Token Storage
 
 Goal: support a backend-owned Strava OAuth connection flow.
+
+Status: OAuth start/callback, real code exchange, token refresh, provider connection persistence, and durable encrypted Postgres token storage are implemented. Remaining Phase 2 hardening is focused on revoked-access transitions and redaction/logging coverage.
 
 Backend changes:
 
@@ -132,6 +134,8 @@ Tests:
 ### Phase 4: Webhook Endpoint and Ongoing Sync
 
 Goal: keep Strava activity state current after the initial connection.
+
+Status: the backend now exposes `/providers/strava/webhook` with Strava subscription validation, signed POST verification, real Strava numeric payload decoding, create/update/delete routing into provider import, post-import matching/completion, durable Postgres-backed webhook dedupe, explicit deleted-provider-activity state that preserves existing imported activity links for review, retryable failure handling that records support-visible retry markers and returns `503` with `Retry-After` for rate limits and temporary Strava failures, a retry service that reprocesses failed retryable webhook imports, and an optional `STRAVA_WEBHOOK_RETRY_INTERVAL_SECONDS` server worker to run retries periodically.
 
 Backend changes:
 

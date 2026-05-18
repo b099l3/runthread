@@ -18,13 +18,19 @@ type Store struct {
 	WorkoutMatches     repository.WorkoutMatchRepository
 	WorkoutResults     repository.WorkoutResultRepository
 	AdaptationEvents   repository.AdaptationEventRepository
+	*ProviderStore
 }
 
 var _ repository.Store = (*Store)(nil)
+var _ repository.ProviderStore = (*Store)(nil)
 
 func NewStore(db *sql.DB) (*Store, error) {
 	if db == nil {
 		return nil, fmt.Errorf("postgres store db is required")
+	}
+	providerStore, err := NewProviderStore(db)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Store{
@@ -36,6 +42,7 @@ func NewStore(db *sql.DB) (*Store, error) {
 		WorkoutMatches:     NewWorkoutMatchRepository(db),
 		WorkoutResults:     NewWorkoutResultRepository(db),
 		AdaptationEvents:   NewAdaptationEventRepository(db),
+		ProviderStore:      providerStore,
 	}, nil
 }
 

@@ -31,6 +31,8 @@ func TestLoadReadsEnvironment(t *testing.T) {
 	t.Setenv(EnvStravaOAuthRedirectURI, "runthread://provider/strava/callback")
 	t.Setenv(EnvStravaWebhookVerifyToken, "strava-webhook-token")
 	t.Setenv(EnvStravaAPIBaseURL, "https://strava.test")
+	t.Setenv(EnvProviderTokenKey, "provider-token-key")
+	t.Setenv(EnvStravaWebhookRetrySecs, "300")
 
 	cfg := Load()
 
@@ -55,6 +57,12 @@ func TestLoadReadsEnvironment(t *testing.T) {
 	if cfg.StravaAPIBaseURL != "https://strava.test" {
 		t.Fatalf("StravaAPIBaseURL = %q, want configured value", cfg.StravaAPIBaseURL)
 	}
+	if cfg.ProviderTokenKey != "provider-token-key" {
+		t.Fatalf("ProviderTokenKey = %q, want configured value", cfg.ProviderTokenKey)
+	}
+	if cfg.StravaWebhookRetryIntervalSeconds != 300 {
+		t.Fatalf("StravaWebhookRetryIntervalSeconds = %d, want 300", cfg.StravaWebhookRetryIntervalSeconds)
+	}
 	if !cfg.DatabaseConfigured() {
 		t.Fatal("DatabaseConfigured = false, want true")
 	}
@@ -71,6 +79,8 @@ func TestLoadTrimsBlankEnvironmentValues(t *testing.T) {
 	t.Setenv(EnvStravaOAuthRedirectURI, "  ")
 	t.Setenv(EnvStravaWebhookVerifyToken, "  ")
 	t.Setenv(EnvStravaAPIBaseURL, "  ")
+	t.Setenv(EnvProviderTokenKey, "  ")
+	t.Setenv(EnvStravaWebhookRetrySecs, "  ")
 
 	cfg := Load()
 
@@ -95,7 +105,23 @@ func TestLoadTrimsBlankEnvironmentValues(t *testing.T) {
 	if cfg.StravaAPIBaseURL != DefaultStravaAPIBaseURL {
 		t.Fatalf("StravaAPIBaseURL = %q, want default for blank env", cfg.StravaAPIBaseURL)
 	}
+	if cfg.ProviderTokenKey != "" {
+		t.Fatalf("ProviderTokenKey = %q, want empty for blank env", cfg.ProviderTokenKey)
+	}
+	if cfg.StravaWebhookRetryIntervalSeconds != 0 {
+		t.Fatalf("StravaWebhookRetryIntervalSeconds = %d, want 0 for blank env", cfg.StravaWebhookRetryIntervalSeconds)
+	}
 	if cfg.StravaOAuthConfigured() {
 		t.Fatal("StravaOAuthConfigured = true, want false")
+	}
+}
+
+func TestLoadIgnoresInvalidWebhookRetryInterval(t *testing.T) {
+	t.Setenv(EnvStravaWebhookRetrySecs, "not-a-number")
+
+	cfg := Load()
+
+	if cfg.StravaWebhookRetryIntervalSeconds != 0 {
+		t.Fatalf("StravaWebhookRetryIntervalSeconds = %d, want 0 for invalid env", cfg.StravaWebhookRetryIntervalSeconds)
 	}
 }

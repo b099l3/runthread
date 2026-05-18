@@ -108,6 +108,7 @@ const (
 	ProviderActivityStatusNormalised ProviderActivityStatus = "normalised"
 	ProviderActivityStatusIgnored    ProviderActivityStatus = "ignored"
 	ProviderActivityStatusFailed     ProviderActivityStatus = "failed"
+	ProviderActivityStatusDeleted    ProviderActivityStatus = "deleted"
 )
 
 func (s ProviderActivityStatus) Valid() bool {
@@ -115,7 +116,8 @@ func (s ProviderActivityStatus) Valid() bool {
 	case ProviderActivityStatusReceived,
 		ProviderActivityStatusNormalised,
 		ProviderActivityStatusIgnored,
-		ProviderActivityStatusFailed:
+		ProviderActivityStatusFailed,
+		ProviderActivityStatusDeleted:
 		return true
 	default:
 		return false

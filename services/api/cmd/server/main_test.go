@@ -2,7 +2,11 @@ package main
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -16,6 +20,7 @@ import (
 	"github.com/runthread/runthread/services/api/internal/config"
 	"github.com/runthread/runthread/services/api/internal/domain"
 	"github.com/runthread/runthread/services/api/internal/planning"
+	"github.com/runthread/runthread/services/api/internal/providerimport"
 	"github.com/runthread/runthread/services/api/internal/providers/strava"
 	"github.com/runthread/runthread/services/api/internal/repository"
 	rpcv1 "github.com/runthread/runthread/services/api/internal/rpc/runthread/v1"
@@ -204,7 +209,7 @@ func TestStravaStartProviderConnectionReturnsOAuthURLWhenConfigured(t *testing.T
 		StravaOAuthRedirectURI: "runthread://provider/strava/callback",
 		StravaAPIBaseURL:       stravaAPI.URL,
 	}
-	runtime, err := composeStravaRuntime(cfg, store)
+	runtime, err := composeStravaRuntime(cfg, startup.Storage{Store: store})
 	if err != nil {
 		t.Fatalf("composeStravaRuntime returned error: %v", err)
 	}
@@ -292,7 +297,7 @@ func TestStravaOAuthCallbackConnectsPendingConnection(t *testing.T) {
 		StravaOAuthRedirectURI: "runthread://provider/strava/callback",
 		StravaAPIBaseURL:       stravaAPI.URL,
 	}
-	runtime, err := composeStravaRuntime(cfg, store)
+	runtime, err := composeStravaRuntime(cfg, startup.Storage{Store: store})
 	if err != nil {
 		t.Fatalf("composeStravaRuntime returned error: %v", err)
 	}
@@ -383,6 +388,280 @@ func TestStravaOAuthCallbackConnectsPendingConnection(t *testing.T) {
 	}
 }
 
+func TestStravaWebhookValidationEchoesChallenge(t *testing.T) {
+	runtime := &stravaRuntime{WebhookVerifyToken: "verify-token-1"}
+	server := httptest.NewServer(newMux(testServices(t), muxOptions{strava: runtime}))
+	defer server.Close()
+
+	response, err := server.Client().Get(server.URL + "/providers/strava/webhook?hub.mode=subscribe&hub.verify_token=verify-token-1&hub.challenge=challenge-1")
+	if err != nil {
+		t.Fatalf("GET webhook validation returned error: %v", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(response.Body)
+		t.Fatalf("status = %d body = %q, want 200", response.StatusCode, string(body))
+	}
+
+	var payload map[string]string
+	if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode validation body: %v", err)
+	}
+	if payload["hub.challenge"] != "challenge-1" {
+		t.Fatalf("challenge = %q, want challenge-1", payload["hub.challenge"])
+	}
+}
+
+func TestStravaWebhookPostImportsRealEventPayload(t *testing.T) {
+	ctx := context.Background()
+	store := repository.NewInMemoryStore()
+	connection := repository.ProviderConnection{
+		ID:             "connection-1",
+		AthleteID:      "athlete-1",
+		Provider:       strava.ProviderName,
+		ProviderUserID: "12345",
+		Status:         repository.ProviderConnectionStatusConnected,
+		ConnectedAt:    testDate(2026, time.June, 9),
+		CreatedAt:      testDate(2026, time.June, 9),
+		UpdatedAt:      testDate(2026, time.June, 9),
+	}
+	if err := store.SaveProviderConnection(ctx, connection); err != nil {
+		t.Fatalf("SaveProviderConnection returned error: %v", err)
+	}
+	importer, err := providerimport.NewService(store, store)
+	if err != nil {
+		t.Fatalf("NewService returned error: %v", err)
+	}
+	body := []byte(`{"aspect_type":"create","event_time":1781006400,"object_id":98765,"object_type":"activity","owner_id":12345,"subscription_id":120475}`)
+	now := time.Date(2026, time.June, 9, 12, 1, 0, 0, time.UTC)
+	runtime := &stravaRuntime{
+		Store: store,
+		Webhook: strava.WebhookService{
+			Providers: store,
+			Importer:  importer,
+			Fetcher: fakeStravaActivityFetcher{
+				payload: strava.MockActivityPayload{
+					ActivityID:       "98765",
+					AthleteID:        "athlete-1",
+					StravaSportType:  "Run",
+					Name:             "Lunch Run",
+					StartDate:        time.Date(2026, time.June, 9, 11, 0, 0, 0, time.UTC),
+					ElapsedTime:      2400,
+					MovingTime:       2400,
+					DistanceMeters:   6800,
+					AverageHeartRate: 150,
+				},
+			},
+			Verifier: strava.SignatureVerifier{
+				SigningSecret: "secret-1",
+				Now:           func() time.Time { return now },
+			},
+			Deduper: strava.NewInMemoryWebhookDeduper(),
+			Now:     func() time.Time { return now },
+		},
+		WebhookVerifyToken: "verify-token-1",
+	}
+	server := httptest.NewServer(newMux(testServices(t), muxOptions{strava: runtime}))
+	defer server.Close()
+
+	request, err := http.NewRequest(http.MethodPost, server.URL+"/providers/strava/webhook", strings.NewReader(string(body)))
+	if err != nil {
+		t.Fatalf("NewRequest returned error: %v", err)
+	}
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("X-Strava-Signature", stravaSignature("secret-1", now, body))
+	response, err := server.Client().Do(request)
+	if err != nil {
+		t.Fatalf("POST webhook returned error: %v", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		responseBody, _ := io.ReadAll(response.Body)
+		t.Fatalf("status = %d body = %q, want 200", response.StatusCode, string(responseBody))
+	}
+
+	activities, err := store.ListProviderActivitiesByAthlete(ctx, "athlete-1")
+	if err != nil {
+		t.Fatalf("ListProviderActivitiesByAthlete returned error: %v", err)
+	}
+	if len(activities) != 1 {
+		t.Fatalf("provider activities = %d, want 1", len(activities))
+	}
+	if activities[0].ProviderActivityID != "98765" {
+		t.Fatalf("provider activity ID = %q, want 98765", activities[0].ProviderActivityID)
+	}
+	if activities[0].Status != repository.ProviderActivityStatusNormalised {
+		t.Fatalf("provider activity status = %q, want normalised", activities[0].Status)
+	}
+}
+
+func TestStravaWebhookPostReturnsRetryableStatusForRateLimit(t *testing.T) {
+	ctx := context.Background()
+	store := repository.NewInMemoryStore()
+	connection := repository.ProviderConnection{
+		ID:             "connection-1",
+		AthleteID:      "athlete-1",
+		Provider:       strava.ProviderName,
+		ProviderUserID: "12345",
+		Status:         repository.ProviderConnectionStatusConnected,
+		ConnectedAt:    testDate(2026, time.June, 9),
+		CreatedAt:      testDate(2026, time.June, 9),
+		UpdatedAt:      testDate(2026, time.June, 9),
+	}
+	if err := store.SaveProviderConnection(ctx, connection); err != nil {
+		t.Fatalf("SaveProviderConnection returned error: %v", err)
+	}
+	importer, err := providerimport.NewService(store, store)
+	if err != nil {
+		t.Fatalf("NewService returned error: %v", err)
+	}
+	body := []byte(`{"aspect_type":"create","event_time":1781006400,"object_id":98765,"object_type":"activity","owner_id":12345,"subscription_id":120475}`)
+	now := time.Date(2026, time.June, 9, 12, 1, 0, 0, time.UTC)
+	runtime := &stravaRuntime{
+		Store: store,
+		Webhook: strava.WebhookService{
+			Providers: store,
+			Importer:  importer,
+			Fetcher:   fakeStravaActivityFetcher{err: strava.ErrRateLimited},
+			Verifier: strava.SignatureVerifier{
+				SigningSecret: "secret-1",
+				Now:           func() time.Time { return now },
+			},
+			Deduper: strava.NewInMemoryWebhookDeduper(),
+			Now:     func() time.Time { return now },
+		},
+		WebhookVerifyToken: "verify-token-1",
+	}
+	server := httptest.NewServer(newMux(testServices(t), muxOptions{strava: runtime}))
+	defer server.Close()
+
+	request, err := http.NewRequest(http.MethodPost, server.URL+"/providers/strava/webhook", strings.NewReader(string(body)))
+	if err != nil {
+		t.Fatalf("NewRequest returned error: %v", err)
+	}
+	request.Header.Set("X-Strava-Signature", stravaSignature("secret-1", now, body))
+	response, err := server.Client().Do(request)
+	if err != nil {
+		t.Fatalf("POST webhook returned error: %v", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusServiceUnavailable {
+		responseBody, _ := io.ReadAll(response.Body)
+		t.Fatalf("status = %d body = %q, want 503", response.StatusCode, string(responseBody))
+	}
+	if response.Header.Get("Retry-After") != "900" {
+		t.Fatalf("Retry-After = %q, want 900", response.Header.Get("Retry-After"))
+	}
+	events, err := store.ListProviderImportEventsByStatus(ctx, repository.ProviderImportEventStatusFailed)
+	if err != nil {
+		t.Fatalf("ListProviderImportEventsByStatus returned error: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("failed import events = %d, want 1", len(events))
+	}
+	if !strings.Contains(events[0].Error, "retryable Strava webhook fetch failure") {
+		t.Fatalf("event error = %q, want retryable marker", events[0].Error)
+	}
+}
+
+func TestComposeStravaWebhookDeduperUsesInMemoryWithoutDatabase(t *testing.T) {
+	deduper, err := composeStravaWebhookDeduper(startup.Storage{})
+	if err != nil {
+		t.Fatalf("composeStravaWebhookDeduper returned error: %v", err)
+	}
+	if _, ok := deduper.(*strava.InMemoryWebhookDeduper); !ok {
+		t.Fatalf("deduper type = %T, want in-memory Strava deduper", deduper)
+	}
+}
+
+func TestComposeStravaRuntimeIncludesWebhookRetryService(t *testing.T) {
+	stravaAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer stravaAPI.Close()
+
+	store := repository.NewInMemoryStore()
+	runtime, err := composeStravaRuntime(config.Config{
+		StravaClientID:         "client-1",
+		StravaClientSecret:     "secret-1",
+		StravaOAuthRedirectURI: "runthread://provider/strava/callback",
+		StravaAPIBaseURL:       stravaAPI.URL,
+	}, startup.Storage{Store: store})
+	if err != nil {
+		t.Fatalf("composeStravaRuntime returned error: %v", err)
+	}
+	if runtime == nil {
+		t.Fatal("runtime is nil")
+	}
+	if runtime.WebhookRetries.Providers == nil {
+		t.Fatal("WebhookRetries providers is nil")
+	}
+	if runtime.WebhookRetries.Fetcher == nil {
+		t.Fatal("WebhookRetries fetcher is nil")
+	}
+}
+
+func TestRetryStravaWebhookImportsUsesRuntimeRetryService(t *testing.T) {
+	ctx := context.Background()
+	store := repository.NewInMemoryStore()
+	connection := repository.ProviderConnection{
+		ID:             "connection-1",
+		AthleteID:      "athlete-1",
+		Provider:       strava.ProviderName,
+		ProviderUserID: "12345",
+		Status:         repository.ProviderConnectionStatusConnected,
+		ConnectedAt:    testDate(2026, time.June, 9),
+		CreatedAt:      testDate(2026, time.June, 9),
+		UpdatedAt:      testDate(2026, time.June, 9),
+	}
+	if err := store.SaveProviderConnection(ctx, connection); err != nil {
+		t.Fatalf("SaveProviderConnection returned error: %v", err)
+	}
+	importer, err := providerimport.NewService(store, store)
+	if err != nil {
+		t.Fatalf("NewService returned error: %v", err)
+	}
+	failedRuntime := &stravaRuntime{
+		Webhook: strava.WebhookService{
+			Providers: store,
+			Importer:  importer,
+			Fetcher:   fakeStravaActivityFetcher{err: strava.ErrRateLimited},
+			Verifier:  fakeServerWebhookVerifier{},
+			Deduper:   strava.NewInMemoryWebhookDeduper(),
+		},
+	}
+	body := webhookRetryBody()
+	_, err = failedRuntime.Webhook.HandleWebhook(ctx, strava.HandleWebhookRequest{Body: body})
+	if err == nil {
+		t.Fatal("HandleWebhook returned nil error, want retryable failure")
+	}
+
+	retryRuntime := &stravaRuntime{
+		WebhookRetries: strava.WebhookService{
+			Providers: store,
+			Importer:  importer,
+			Fetcher: fakeStravaActivityFetcher{
+				payload: strava.MockActivityPayload{
+					ActivityID:       "98765",
+					AthleteID:        "athlete-1",
+					StravaSportType:  "Run",
+					Name:             "Retry Run",
+					StartDate:        time.Date(2026, time.June, 9, 11, 0, 0, 0, time.UTC),
+					ElapsedTime:      2400,
+					MovingTime:       2400,
+					DistanceMeters:   6800,
+					AverageHeartRate: 150,
+				},
+			},
+		},
+	}
+	result, err := retryStravaWebhookImports(ctx, retryRuntime)
+	if err != nil {
+		t.Fatalf("retryStravaWebhookImports returned error: %v", err)
+	}
+	if result.Attempted != 1 || result.Succeeded != 1 {
+		t.Fatalf("retry result = attempted %d succeeded %d, want 1/1", result.Attempted, result.Succeeded)
+	}
+}
+
 const dateLayout = "2006-01-02"
 
 func testServices(t *testing.T) app.Services {
@@ -401,6 +680,44 @@ func testStravaConnectionStarter(oauth *strava.OAuthService, redirectURI string)
 		RedirectURI: redirectURI,
 		Scopes:      []string{"activity:read_all"},
 	}
+}
+
+type fakeStravaActivityFetcher struct {
+	payload strava.MockActivityPayload
+	err     error
+}
+
+func (f fakeStravaActivityFetcher) ListBackfillActivities(ctx context.Context, req strava.BackfillListRequest) ([]strava.MockActivitySummary, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return []strava.MockActivitySummary{{ActivityID: f.payload.ActivityID}}, nil
+}
+
+func (f fakeStravaActivityFetcher) FetchActivityDetail(ctx context.Context, req strava.ActivityDetailRequest) (strava.MockActivityPayload, error) {
+	if f.err != nil {
+		return strava.MockActivityPayload{}, f.err
+	}
+	return f.payload, nil
+}
+
+func stravaSignature(secret string, at time.Time, body []byte) string {
+	timestamp := fmt.Sprintf("%d", at.Unix())
+	mac := hmac.New(sha256.New, []byte(secret))
+	_, _ = mac.Write([]byte(timestamp))
+	_, _ = mac.Write([]byte("."))
+	_, _ = mac.Write(body)
+	return "t=" + timestamp + ",v1=" + hex.EncodeToString(mac.Sum(nil))
+}
+
+type fakeServerWebhookVerifier struct{}
+
+func (fakeServerWebhookVerifier) VerifyWebhook(ctx context.Context, req strava.VerifyWebhookRequest) error {
+	return ctx.Err()
+}
+
+func webhookRetryBody() []byte {
+	return []byte(`{"aspect_type":"create","event_time":1781006400,"object_id":98765,"object_type":"activity","owner_id":12345,"subscription_id":120475}`)
 }
 
 func testProfile() domain.AthleteProfile {

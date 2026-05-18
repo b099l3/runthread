@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -16,6 +18,7 @@ import (
 	"github.com/runthread/runthread/services/api/internal/config"
 	"github.com/runthread/runthread/services/api/internal/domain"
 	"github.com/runthread/runthread/services/api/internal/planning"
+	"github.com/runthread/runthread/services/api/internal/postgres"
 	"github.com/runthread/runthread/services/api/internal/providerimport"
 	"github.com/runthread/runthread/services/api/internal/providers/strava"
 	"github.com/runthread/runthread/services/api/internal/repository"
@@ -23,6 +26,8 @@ import (
 	"github.com/runthread/runthread/services/api/internal/rpc/runthread/v1/runthreadv1connect"
 	"github.com/runthread/runthread/services/api/internal/startup"
 )
+
+const stravaWebhookRetryBatchLimit = 25
 
 func main() {
 	cfg := config.Load()
@@ -41,7 +46,7 @@ func main() {
 		log.Printf("api server app setup failed error=%v", err)
 		os.Exit(1)
 	}
-	stravaRuntime, err := composeStravaRuntime(cfg, storage.Store)
+	stravaRuntime, err := composeStravaRuntime(cfg, storage)
 	if err != nil {
 		log.Printf("api server Strava setup failed error=%v", err)
 		os.Exit(1)
@@ -68,6 +73,9 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	if stravaRuntime != nil {
+		startStravaWebhookRetryWorker(ctx, stravaRuntime, time.Duration(cfg.StravaWebhookRetryIntervalSeconds)*time.Second)
+	}
 
 	go func() {
 		log.Printf("api server starting addr=%s storage=%s database_configured=%t", server.Addr, storage.Kind, cfg.DatabaseConfigured())
@@ -118,21 +126,26 @@ func newMux(services app.Services, options ...muxOptions) *http.ServeMux {
 	mux.Handle(runthreadPath, runthreadHandler)
 	if option.strava != nil {
 		mux.HandleFunc("/providers/strava/oauth/callback", stravaOAuthCallbackHandler(option.strava))
+		mux.HandleFunc("/providers/strava/webhook", stravaWebhookHandler(option.strava))
 	}
 	return mux
 }
 
 type stravaRuntime struct {
-	OAuth       *strava.OAuthService
-	Backfill    strava.BackfillService
-	Store       repository.Store
-	RedirectURI string
+	OAuth              *strava.OAuthService
+	Backfill           strava.BackfillService
+	Webhook            strava.WebhookService
+	WebhookRetries     strava.WebhookService
+	Store              repository.Store
+	RedirectURI        string
+	WebhookVerifyToken string
 }
 
-func composeStravaRuntime(cfg config.Config, store repository.Store) (*stravaRuntime, error) {
+func composeStravaRuntime(cfg config.Config, storage startup.Storage) (*stravaRuntime, error) {
 	if !cfg.StravaOAuthConfigured() {
 		return nil, nil
 	}
+	store := storage.Store
 	providerStore, ok := store.(repository.ProviderStore)
 	if !ok {
 		return nil, nil
@@ -141,7 +154,10 @@ func composeStravaRuntime(cfg config.Config, store repository.Store) (*stravaRun
 	if baseURL == "" {
 		baseURL = config.DefaultStravaAPIBaseURL
 	}
-	tokenStore := strava.NewInMemoryTokenStore()
+	tokenStore, err := composeStravaTokenStore(cfg, storage)
+	if err != nil {
+		return nil, err
+	}
 	exchanger := strava.HTTPCodeExchanger{
 		ClientID:     cfg.StravaClientID,
 		ClientSecret: cfg.StravaClientSecret,
@@ -162,19 +178,61 @@ func composeStravaRuntime(cfg config.Config, store repository.Store) (*stravaRun
 		Store:     tokenStore,
 		Refresher: exchanger,
 	}
+	webhookDeduper, err := composeStravaWebhookDeduper(storage)
+	if err != nil {
+		return nil, err
+	}
+	fetcher := strava.HTTPActivityFetcher{
+		BaseURL: baseURL,
+		Tokens:  tokenManager,
+	}
+	webhookService := strava.WebhookService{
+		Providers: providerStore,
+		Importer:  importer,
+		Fetcher:   fetcher,
+		Verifier: strava.SignatureVerifier{
+			SigningSecret: cfg.StravaClientSecret,
+		},
+		Deduper: webhookDeduper,
+	}
 	return &stravaRuntime{
 		OAuth: oauth,
 		Backfill: strava.BackfillService{
 			Providers: providerStore,
 			Importer:  importer,
-			Fetcher: strava.HTTPActivityFetcher{
-				BaseURL: baseURL,
-				Tokens:  tokenManager,
-			},
+			Fetcher:   fetcher,
 		},
-		Store:       store,
-		RedirectURI: cfg.StravaOAuthRedirectURI,
+		Webhook:            webhookService,
+		WebhookRetries:     webhookService,
+		Store:              store,
+		RedirectURI:        cfg.StravaOAuthRedirectURI,
+		WebhookVerifyToken: cfg.StravaWebhookVerifyToken,
 	}, nil
+}
+
+func composeStravaWebhookDeduper(storage startup.Storage) (strava.WebhookDeduper, error) {
+	if storage.DB == nil {
+		return strava.NewInMemoryWebhookDeduper(), nil
+	}
+	deduper, err := postgres.NewProviderWebhookDeduper(storage.DB, strava.ProviderName)
+	if err != nil {
+		return nil, fmt.Errorf("compose Strava webhook deduper: %w", err)
+	}
+	return deduper, nil
+}
+
+func composeStravaTokenStore(cfg config.Config, storage startup.Storage) (interface {
+	strava.TokenStore
+	strava.TokenRepository
+}, error) {
+	if storage.DB == nil {
+		return strava.NewInMemoryTokenStore(), nil
+	}
+	store, err := postgres.NewStravaTokenStore(storage.DB, cfg.ProviderTokenKey)
+	if err != nil {
+		return nil, fmt.Errorf("compose Strava token store: %w", err)
+	}
+	return store, nil
 }
 
 func stravaOAuthCallbackHandler(runtime *stravaRuntime) http.HandlerFunc {
@@ -212,6 +270,117 @@ func stravaOAuthCallbackHandler(runtime *stravaRuntime) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("Strava connected\n"))
 	}
+}
+
+func stravaWebhookHandler(runtime *stravaRuntime) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handleStravaWebhookValidation(w, r, runtime)
+		case http.MethodPost:
+			handleStravaWebhookEvent(w, r, runtime)
+		default:
+			w.Header().Set("Allow", http.MethodGet+", "+http.MethodPost)
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+}
+
+func handleStravaWebhookValidation(w http.ResponseWriter, r *http.Request, runtime *stravaRuntime) {
+	query := r.URL.Query()
+	if query.Get("hub.mode") != "subscribe" || query.Get("hub.verify_token") == "" || query.Get("hub.verify_token") != runtime.WebhookVerifyToken {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+	challenge := query.Get("hub.challenge")
+	if challenge == "" {
+		http.Error(w, "missing challenge", http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{"hub.challenge": challenge})
+}
+
+func handleStravaWebhookEvent(w http.ResponseWriter, r *http.Request, runtime *stravaRuntime) {
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		http.Error(w, "read Strava webhook body failed", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	result, err := runtime.Webhook.HandleWebhook(r.Context(), strava.HandleWebhookRequest{
+		Body:      body,
+		Signature: r.Header.Get("X-Strava-Signature"),
+	})
+	if err != nil {
+		log.Printf("strava webhook failed action=%s event_id=%s object_type=%s object_id=%s error=%v", result.Action, result.Event.EventID, result.Event.ObjectType, result.Event.ObjectID, err)
+		status := http.StatusInternalServerError
+		if strings.Contains(err.Error(), "verify Strava webhook") {
+			status = http.StatusUnauthorized
+		} else if result.Action == "" || strings.Contains(err.Error(), "decode Strava webhook") || strings.Contains(err.Error(), "unsupported Strava webhook") || strings.Contains(err.Error(), "strava webhook event") || strings.Contains(err.Error(), "webhook body") {
+			status = http.StatusBadRequest
+		} else if strava.IsRetryableWebhookError(err) {
+			status = http.StatusServiceUnavailable
+			w.Header().Set("Retry-After", stravaWebhookRetryAfter(err))
+		}
+		http.Error(w, "strava webhook failed", status)
+		return
+	}
+	if result.Import != nil && result.Import.ImportedActivity != nil {
+		backfill := strava.BackfillResult{Imports: []providerimport.ImportResult{*result.Import}}
+		if err := completeStravaBackfillImports(r.Context(), runtime.Store, backfill); err != nil {
+			log.Printf("strava webhook completion failed event_id=%s imported_activity_id=%s error=%v", result.Event.EventID, result.Import.ImportedActivity.ID, err)
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": string(result.Action)})
+}
+
+func stravaWebhookRetryAfter(err error) string {
+	if errors.Is(err, strava.ErrRateLimited) {
+		return "900"
+	}
+	return "60"
+}
+
+func startStravaWebhookRetryWorker(ctx context.Context, runtime *stravaRuntime, interval time.Duration) {
+	if runtime == nil || interval <= 0 {
+		return
+	}
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		log.Printf("strava webhook retry worker started interval=%s", interval)
+		for {
+			select {
+			case <-ctx.Done():
+				log.Print("strava webhook retry worker stopped")
+				return
+			case <-ticker.C:
+				result, err := retryStravaWebhookImports(ctx, runtime)
+				if err != nil {
+					log.Printf("strava webhook retry worker failed error=%v", err)
+					continue
+				}
+				if result.Attempted > 0 || result.Skipped > 0 || result.Failed > 0 {
+					log.Printf("strava webhook retry worker completed attempted=%d succeeded=%d failed=%d skipped=%d", result.Attempted, result.Succeeded, result.Failed, result.Skipped)
+				}
+			}
+		}
+	}()
+}
+
+func retryStravaWebhookImports(ctx context.Context, runtime *stravaRuntime) (strava.RetryWebhookImportsResult, error) {
+	if runtime == nil {
+		return strava.RetryWebhookImportsResult{}, fmt.Errorf("strava runtime is required")
+	}
+	return runtime.WebhookRetries.RetryFailedWebhookImports(ctx, strava.RetryWebhookImportsRequest{
+		Limit: stravaWebhookRetryBatchLimit,
+	})
 }
 
 func completeStravaBackfillImports(ctx context.Context, store repository.Store, backfill strava.BackfillResult) error {

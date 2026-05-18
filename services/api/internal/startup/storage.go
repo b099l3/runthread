@@ -22,6 +22,7 @@ const (
 type Storage struct {
 	Store   repository.Store
 	Kind    StorageKind
+	DB      *sql.DB
 	Cleanup func() error
 }
 
@@ -52,6 +53,7 @@ func ComposeStorage(cfg config.Config) (Storage, error) {
 	return Storage{
 		Store:   store,
 		Kind:    StorageKindPostgres,
+		DB:      db,
 		Cleanup: db.Close,
 	}, nil
 }
