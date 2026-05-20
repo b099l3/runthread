@@ -28,6 +28,7 @@ import (
 )
 
 const stravaWebhookRetryBatchLimit = 25
+const stravaInitialBackfillTimeout = 2 * time.Minute
 
 func main() {
 	cfg := config.Load()
@@ -256,19 +257,26 @@ func stravaOAuthCallbackHandler(runtime *stravaRuntime) http.HandlerFunc {
 			http.Error(w, "strava authorization callback failed", http.StatusBadRequest)
 			return
 		}
-		backfillResult, err := runtime.Backfill.RunInitialBackfill(r.Context(), strava.RunBackfillRequest{
-			ProviderConnectionID: response.Connection.ID,
-		})
-		if err != nil && backfillResult.Status != strava.BackfillStatusDeferred && backfillResult.Status != strava.BackfillStatusPartial {
-			log.Printf("strava initial backfill failed provider_connection_id=%s status=%s error=%v", response.Connection.ID, backfillResult.Status, err)
-		}
-		if err := completeStravaBackfillImports(r.Context(), runtime.Store, backfillResult); err != nil {
-			log.Printf("strava initial backfill completion failed provider_connection_id=%s error=%v", response.Connection.ID, err)
-		}
+		runStravaInitialBackfill(runtime, response.Connection.ID)
 
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("Strava connected\n"))
+	}
+}
+
+func runStravaInitialBackfill(runtime *stravaRuntime, providerConnectionID string) {
+	backfillCtx, cancel := context.WithTimeout(context.Background(), stravaInitialBackfillTimeout)
+	defer cancel()
+
+	backfillResult, err := runtime.Backfill.RunInitialBackfill(backfillCtx, strava.RunBackfillRequest{
+		ProviderConnectionID: providerConnectionID,
+	})
+	if err != nil && backfillResult.Status != strava.BackfillStatusDeferred && backfillResult.Status != strava.BackfillStatusPartial {
+		log.Printf("strava initial backfill failed provider_connection_id=%s status=%s error=%v", providerConnectionID, backfillResult.Status, err)
+	}
+	if err := completeStravaBackfillImports(backfillCtx, runtime.Store, backfillResult); err != nil {
+		log.Printf("strava initial backfill completion failed provider_connection_id=%s error=%v", providerConnectionID, err)
 	}
 }
 

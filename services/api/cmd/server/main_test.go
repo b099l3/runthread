@@ -388,6 +388,64 @@ func TestStravaOAuthCallbackConnectsPendingConnection(t *testing.T) {
 	}
 }
 
+func TestRunStravaInitialBackfillRestoresConnectionAfterSync(t *testing.T) {
+	ctx := context.Background()
+	store := repository.NewInMemoryStore()
+	if err := startup.SeedDemoData(ctx, store); err != nil {
+		t.Fatalf("SeedDemoData returned error: %v", err)
+	}
+	connection := repository.ProviderConnection{
+		ID:             "connection-1",
+		AthleteID:      "athlete-1",
+		Provider:       strava.ProviderName,
+		ProviderUserID: "12345",
+		Status:         repository.ProviderConnectionStatusConnected,
+		ConnectedAt:    testDate(2026, time.June, 9),
+		CreatedAt:      testDate(2026, time.June, 9),
+		UpdatedAt:      testDate(2026, time.June, 9),
+	}
+	if err := store.SaveProviderConnection(ctx, connection); err != nil {
+		t.Fatalf("SaveProviderConnection returned error: %v", err)
+	}
+	importer, err := providerimport.NewService(store, store)
+	if err != nil {
+		t.Fatalf("NewService returned error: %v", err)
+	}
+	runtime := &stravaRuntime{
+		Store: store,
+		Backfill: strava.BackfillService{
+			Providers: store,
+			Importer:  importer,
+			Fetcher: fakeStravaActivityFetcher{
+				payload: strava.MockActivityPayload{
+					ActivityID:       "98765",
+					AthleteID:        "athlete-1",
+					StravaSportType:  "Run",
+					Name:             "Morning Run",
+					StartDate:        time.Date(2026, time.June, 9, 7, 30, 0, 0, time.UTC),
+					ElapsedTime:      2460,
+					MovingTime:       2460,
+					DistanceMeters:   6800,
+					AverageHeartRate: 150,
+				},
+			},
+		},
+	}
+
+	runStravaInitialBackfill(runtime, connection.ID)
+
+	updated, err := store.GetProviderConnection(ctx, connection.ID)
+	if err != nil {
+		t.Fatalf("GetProviderConnection returned error: %v", err)
+	}
+	if updated.Status != repository.ProviderConnectionStatusConnected {
+		t.Fatalf("status = %q, want connected", updated.Status)
+	}
+	if updated.LastSyncAt.IsZero() {
+		t.Fatal("LastSyncAt is zero, want backfill completion timestamp")
+	}
+}
+
 func TestStravaWebhookValidationEchoesChallenge(t *testing.T) {
 	runtime := &stravaRuntime{WebhookVerifyToken: "verify-token-1"}
 	server := httptest.NewServer(newMux(testServices(t), muxOptions{strava: runtime}))
