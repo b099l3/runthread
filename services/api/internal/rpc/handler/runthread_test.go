@@ -164,6 +164,43 @@ func TestRunthreadServiceGetProviderConnectionStatus(t *testing.T) {
 	}
 }
 
+func TestRunthreadServiceDisconnectProviderConnection(t *testing.T) {
+	ctx := context.Background()
+	store := repository.NewInMemoryStore()
+	if err := store.SaveProviderConnection(ctx, repository.ProviderConnection{
+		ID:             "connection-1",
+		AthleteID:      "athlete-1",
+		Provider:       app.ProviderStrava,
+		ProviderUserID: "strava-user-1",
+		Status:         repository.ProviderConnectionStatusConnected,
+		ConnectedAt:    testDate(2026, time.June, 5),
+		TokenReference: "token-reference-1",
+	}); err != nil {
+		t.Fatalf("SaveProviderConnection returned error: %v", err)
+	}
+	services, err := app.NewServices(store)
+	if err != nil {
+		t.Fatalf("NewServices returned error: %v", err)
+	}
+	handler := NewRunthreadService(services)
+
+	response, err := handler.DisconnectProviderConnection(ctx, connect.NewRequest(&rpcv1.DisconnectProviderConnectionRequest{
+		AthleteId:            "athlete-1",
+		Provider:             rpcv1.Provider_PROVIDER_STRAVA,
+		ProviderConnectionId: "connection-1",
+	}))
+	if err != nil {
+		t.Fatalf("DisconnectProviderConnection returned error: %v", err)
+	}
+
+	if response.Msg.GetConnection().GetStatus() != rpcv1.ProviderConnectionStatus_PROVIDER_CONNECTION_STATUS_DISCONNECTED {
+		t.Fatalf("connection status = %s, want disconnected", response.Msg.GetConnection().GetStatus())
+	}
+	if response.Msg.GetConnection().GetDisconnectedAt() == nil {
+		t.Fatal("expected disconnected_at")
+	}
+}
+
 func TestRunthreadServiceCompleteImportedActivityRejectsBadRequest(t *testing.T) {
 	services, err := app.NewServices(repository.NewInMemoryStore())
 	if err != nil {

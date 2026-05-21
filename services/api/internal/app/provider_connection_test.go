@@ -184,6 +184,68 @@ func TestGetProviderConnectionStatusReturnsNoConnection(t *testing.T) {
 	}
 }
 
+func TestDisconnectProviderConnectionMarksConnectionDisconnected(t *testing.T) {
+	ctx := context.Background()
+	store := repository.NewInMemoryStore()
+	existing := providerConnectionRecord("connection-1", "athlete-1", repository.ProviderConnectionStatusConnected)
+	existing.Provider = ProviderStrava
+	existing.TokenReference = "token-reference-1"
+	existing.TokenExpiresAt = providerConnectionNow().Add(time.Hour)
+	existing.LastImportCursor = "cursor-1"
+	existing.LastError = "old error"
+	if err := store.SaveProviderConnection(ctx, existing); err != nil {
+		t.Fatalf("SaveProviderConnection returned error: %v", err)
+	}
+	service := ProviderConnectionService{Store: store, Now: providerConnectionNow}
+
+	response, err := service.DisconnectProviderConnection(ctx, DisconnectProviderConnectionRequest{
+		AthleteID:            "athlete-1",
+		Provider:             ProviderStrava,
+		ProviderConnectionID: "connection-1",
+	})
+	if err != nil {
+		t.Fatalf("DisconnectProviderConnection returned error: %v", err)
+	}
+
+	if response.Connection.Status != repository.ProviderConnectionStatusDisconnected {
+		t.Fatalf("connection status = %q, want disconnected", response.Connection.Status)
+	}
+	if response.Connection.DisconnectedAt != providerConnectionNow() {
+		t.Fatalf("disconnected at = %v, want %v", response.Connection.DisconnectedAt, providerConnectionNow())
+	}
+	if response.Connection.TokenReference != "" {
+		t.Fatalf("token reference = %q, want empty", response.Connection.TokenReference)
+	}
+	if !response.Connection.TokenExpiresAt.IsZero() {
+		t.Fatalf("token expires at = %v, want zero", response.Connection.TokenExpiresAt)
+	}
+	if response.Connection.LastImportCursor != "" {
+		t.Fatalf("last import cursor = %q, want empty", response.Connection.LastImportCursor)
+	}
+	if response.Connection.LastError != "" {
+		t.Fatalf("last error = %q, want empty", response.Connection.LastError)
+	}
+}
+
+func TestDisconnectProviderConnectionRejectsOtherAthleteConnection(t *testing.T) {
+	ctx := context.Background()
+	store := repository.NewInMemoryStore()
+	existing := providerConnectionRecord("connection-1", "athlete-2", repository.ProviderConnectionStatusConnected)
+	if err := store.SaveProviderConnection(ctx, existing); err != nil {
+		t.Fatalf("SaveProviderConnection returned error: %v", err)
+	}
+	service := ProviderConnectionService{Store: store, Now: providerConnectionNow}
+
+	_, err := service.DisconnectProviderConnection(ctx, DisconnectProviderConnectionRequest{
+		AthleteID:            "athlete-1",
+		Provider:             ProviderGarmin,
+		ProviderConnectionID: "connection-1",
+	})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
 func TestProviderConnectionServiceRejectsUnsupportedProvider(t *testing.T) {
 	service := ProviderConnectionService{Store: repository.NewInMemoryStore()}
 

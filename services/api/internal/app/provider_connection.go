@@ -50,6 +50,16 @@ type StartProviderConnectionResponse struct {
 	OAuthReady       bool
 }
 
+type DisconnectProviderConnectionRequest struct {
+	AthleteID            string
+	Provider             string
+	ProviderConnectionID string
+}
+
+type DisconnectProviderConnectionResponse struct {
+	Connection repository.ProviderConnection
+}
+
 func (s ProviderConnectionService) GetProviderConnectionStatus(ctx context.Context, req GetProviderConnectionStatusRequest) (GetProviderConnectionStatusResponse, error) {
 	if err := s.validateProviderRequest(req.AthleteID, req.Provider); err != nil {
 		return GetProviderConnectionStatusResponse{}, err
@@ -83,6 +93,35 @@ func (s ProviderConnectionService) GetProviderConnectionStatus(ctx context.Conte
 	return GetProviderConnectionStatusResponse{
 		Connection:    connection,
 		HasConnection: found,
+	}, nil
+}
+
+func (s ProviderConnectionService) DisconnectProviderConnection(ctx context.Context, req DisconnectProviderConnectionRequest) (DisconnectProviderConnectionResponse, error) {
+	if err := s.validateProviderRequest(req.AthleteID, req.Provider); err != nil {
+		return DisconnectProviderConnectionResponse{}, err
+	}
+
+	connection, found, err := s.requestedConnection(ctx, req.AthleteID, req.Provider, req.ProviderConnectionID)
+	if err != nil {
+		return DisconnectProviderConnectionResponse{}, err
+	}
+	if !found {
+		return DisconnectProviderConnectionResponse{}, repository.ErrNotFound
+	}
+
+	now := s.now()
+	connection.Status = repository.ProviderConnectionStatusDisconnected
+	connection.DisconnectedAt = now
+	connection.LastImportCursor = ""
+	connection.TokenReference = ""
+	connection.TokenExpiresAt = time.Time{}
+	connection.LastError = ""
+	connection.UpdatedAt = now
+	if err := s.Store.SaveProviderConnection(ctx, connection); err != nil {
+		return DisconnectProviderConnectionResponse{}, fmt.Errorf("save disconnected provider connection: %w", err)
+	}
+	return DisconnectProviderConnectionResponse{
+		Connection: connection,
 	}, nil
 }
 
@@ -151,6 +190,26 @@ func (s ProviderConnectionService) pendingConnection(ctx context.Context, athlet
 		}
 	}
 	return repository.ProviderConnection{}, false, nil
+}
+
+func (s ProviderConnectionService) requestedConnection(ctx context.Context, athleteID string, provider string, providerConnectionID string) (repository.ProviderConnection, bool, error) {
+	if providerConnectionID == "" {
+		return s.bestConnection(ctx, athleteID, provider)
+	}
+	connection, err := s.Store.GetProviderConnection(ctx, providerConnectionID)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return repository.ProviderConnection{}, false, nil
+		}
+		return repository.ProviderConnection{}, false, fmt.Errorf("get provider connection: %w", err)
+	}
+	if connection.AthleteID != athleteID {
+		return repository.ProviderConnection{}, false, fmt.Errorf("provider connection does not belong to athlete")
+	}
+	if connection.Provider != provider {
+		return repository.ProviderConnection{}, false, fmt.Errorf("provider connection provider %q does not match request provider %q", connection.Provider, provider)
+	}
+	return connection, true, nil
 }
 
 func (s ProviderConnectionService) bestConnection(ctx context.Context, athleteID string, provider string) (repository.ProviderConnection, bool, error) {

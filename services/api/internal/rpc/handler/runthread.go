@@ -2,11 +2,13 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"connectrpc.com/connect"
 
 	"github.com/runthread/runthread/services/api/internal/app"
+	"github.com/runthread/runthread/services/api/internal/repository"
 	rpcv1 "github.com/runthread/runthread/services/api/internal/rpc/runthread/v1"
 )
 
@@ -64,6 +66,23 @@ func (s RunthreadService) StartProviderConnection(ctx context.Context, req *conn
 	}
 
 	return connect.NewResponse(startProviderConnectionResponseFromApp(response)), nil
+}
+
+func (s RunthreadService) DisconnectProviderConnection(ctx context.Context, req *connect.Request[rpcv1.DisconnectProviderConnectionRequest]) (*connect.Response[rpcv1.DisconnectProviderConnectionResponse], error) {
+	appRequest, err := disconnectProviderConnectionRequestToApp(req.Msg)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	response, err := s.providerConnect.DisconnectProviderConnection(ctx, appRequest)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("disconnect provider connection: %w", err))
+		}
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("disconnect provider connection: %w", err))
+	}
+
+	return connect.NewResponse(disconnectProviderConnectionResponseFromApp(response)), nil
 }
 
 func (s RunthreadService) CompleteImportedActivity(ctx context.Context, req *connect.Request[rpcv1.CompleteImportedActivityRequest]) (*connect.Response[rpcv1.CompleteImportedActivityResponse], error) {

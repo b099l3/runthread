@@ -10,6 +10,7 @@ service RunthreadService {
   rpc GetCurrentPlanWeek(GetCurrentPlanWeekRequest) returns (GetCurrentPlanWeekResponse);
   rpc GetProviderConnectionStatus(GetProviderConnectionStatusRequest) returns (GetProviderConnectionStatusResponse);
   rpc StartProviderConnection(StartProviderConnectionRequest) returns (StartProviderConnectionResponse);
+  rpc DisconnectProviderConnection(DisconnectProviderConnectionRequest) returns (DisconnectProviderConnectionResponse);
   rpc CompleteImportedActivity(CompleteImportedActivityRequest) returns (CompleteImportedActivityResponse);
 }
 
@@ -68,6 +69,16 @@ message StartProviderConnectionResponse {
   string authorization_url = 2;
   string state = 3;
   bool oauth_ready = 4;
+}
+
+message DisconnectProviderConnectionRequest {
+  string athlete_id = 1;
+  Provider provider = 2;
+  string provider_connection_id = 3;
+}
+
+message DisconnectProviderConnectionResponse {
+  ProviderConnection connection = 1;
 }
 
 message ProviderConnection {

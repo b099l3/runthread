@@ -42,6 +42,9 @@ const (
 	// RunthreadServiceStartProviderConnectionProcedure is the fully-qualified name of the
 	// RunthreadService's StartProviderConnection RPC.
 	RunthreadServiceStartProviderConnectionProcedure = "/runthread.v1.RunthreadService/StartProviderConnection"
+	// RunthreadServiceDisconnectProviderConnectionProcedure is the fully-qualified name of the
+	// RunthreadService's DisconnectProviderConnection RPC.
+	RunthreadServiceDisconnectProviderConnectionProcedure = "/runthread.v1.RunthreadService/DisconnectProviderConnection"
 	// RunthreadServiceCompleteImportedActivityProcedure is the fully-qualified name of the
 	// RunthreadService's CompleteImportedActivity RPC.
 	RunthreadServiceCompleteImportedActivityProcedure = "/runthread.v1.RunthreadService/CompleteImportedActivity"
@@ -52,6 +55,7 @@ type RunthreadServiceClient interface {
 	GetCurrentPlanWeek(context.Context, *connect.Request[v1.GetCurrentPlanWeekRequest]) (*connect.Response[v1.GetCurrentPlanWeekResponse], error)
 	GetProviderConnectionStatus(context.Context, *connect.Request[v1.GetProviderConnectionStatusRequest]) (*connect.Response[v1.GetProviderConnectionStatusResponse], error)
 	StartProviderConnection(context.Context, *connect.Request[v1.StartProviderConnectionRequest]) (*connect.Response[v1.StartProviderConnectionResponse], error)
+	DisconnectProviderConnection(context.Context, *connect.Request[v1.DisconnectProviderConnectionRequest]) (*connect.Response[v1.DisconnectProviderConnectionResponse], error)
 	CompleteImportedActivity(context.Context, *connect.Request[v1.CompleteImportedActivityRequest]) (*connect.Response[v1.CompleteImportedActivityResponse], error)
 }
 
@@ -84,6 +88,12 @@ func NewRunthreadServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(runthreadServiceMethods.ByName("StartProviderConnection")),
 			connect.WithClientOptions(opts...),
 		),
+		disconnectProviderConnection: connect.NewClient[v1.DisconnectProviderConnectionRequest, v1.DisconnectProviderConnectionResponse](
+			httpClient,
+			baseURL+RunthreadServiceDisconnectProviderConnectionProcedure,
+			connect.WithSchema(runthreadServiceMethods.ByName("DisconnectProviderConnection")),
+			connect.WithClientOptions(opts...),
+		),
 		completeImportedActivity: connect.NewClient[v1.CompleteImportedActivityRequest, v1.CompleteImportedActivityResponse](
 			httpClient,
 			baseURL+RunthreadServiceCompleteImportedActivityProcedure,
@@ -95,10 +105,11 @@ func NewRunthreadServiceClient(httpClient connect.HTTPClient, baseURL string, op
 
 // runthreadServiceClient implements RunthreadServiceClient.
 type runthreadServiceClient struct {
-	getCurrentPlanWeek          *connect.Client[v1.GetCurrentPlanWeekRequest, v1.GetCurrentPlanWeekResponse]
-	getProviderConnectionStatus *connect.Client[v1.GetProviderConnectionStatusRequest, v1.GetProviderConnectionStatusResponse]
-	startProviderConnection     *connect.Client[v1.StartProviderConnectionRequest, v1.StartProviderConnectionResponse]
-	completeImportedActivity    *connect.Client[v1.CompleteImportedActivityRequest, v1.CompleteImportedActivityResponse]
+	getCurrentPlanWeek           *connect.Client[v1.GetCurrentPlanWeekRequest, v1.GetCurrentPlanWeekResponse]
+	getProviderConnectionStatus  *connect.Client[v1.GetProviderConnectionStatusRequest, v1.GetProviderConnectionStatusResponse]
+	startProviderConnection      *connect.Client[v1.StartProviderConnectionRequest, v1.StartProviderConnectionResponse]
+	disconnectProviderConnection *connect.Client[v1.DisconnectProviderConnectionRequest, v1.DisconnectProviderConnectionResponse]
+	completeImportedActivity     *connect.Client[v1.CompleteImportedActivityRequest, v1.CompleteImportedActivityResponse]
 }
 
 // GetCurrentPlanWeek calls runthread.v1.RunthreadService.GetCurrentPlanWeek.
@@ -116,6 +127,11 @@ func (c *runthreadServiceClient) StartProviderConnection(ctx context.Context, re
 	return c.startProviderConnection.CallUnary(ctx, req)
 }
 
+// DisconnectProviderConnection calls runthread.v1.RunthreadService.DisconnectProviderConnection.
+func (c *runthreadServiceClient) DisconnectProviderConnection(ctx context.Context, req *connect.Request[v1.DisconnectProviderConnectionRequest]) (*connect.Response[v1.DisconnectProviderConnectionResponse], error) {
+	return c.disconnectProviderConnection.CallUnary(ctx, req)
+}
+
 // CompleteImportedActivity calls runthread.v1.RunthreadService.CompleteImportedActivity.
 func (c *runthreadServiceClient) CompleteImportedActivity(ctx context.Context, req *connect.Request[v1.CompleteImportedActivityRequest]) (*connect.Response[v1.CompleteImportedActivityResponse], error) {
 	return c.completeImportedActivity.CallUnary(ctx, req)
@@ -126,6 +142,7 @@ type RunthreadServiceHandler interface {
 	GetCurrentPlanWeek(context.Context, *connect.Request[v1.GetCurrentPlanWeekRequest]) (*connect.Response[v1.GetCurrentPlanWeekResponse], error)
 	GetProviderConnectionStatus(context.Context, *connect.Request[v1.GetProviderConnectionStatusRequest]) (*connect.Response[v1.GetProviderConnectionStatusResponse], error)
 	StartProviderConnection(context.Context, *connect.Request[v1.StartProviderConnectionRequest]) (*connect.Response[v1.StartProviderConnectionResponse], error)
+	DisconnectProviderConnection(context.Context, *connect.Request[v1.DisconnectProviderConnectionRequest]) (*connect.Response[v1.DisconnectProviderConnectionResponse], error)
 	CompleteImportedActivity(context.Context, *connect.Request[v1.CompleteImportedActivityRequest]) (*connect.Response[v1.CompleteImportedActivityResponse], error)
 }
 
@@ -154,6 +171,12 @@ func NewRunthreadServiceHandler(svc RunthreadServiceHandler, opts ...connect.Han
 		connect.WithSchema(runthreadServiceMethods.ByName("StartProviderConnection")),
 		connect.WithHandlerOptions(opts...),
 	)
+	runthreadServiceDisconnectProviderConnectionHandler := connect.NewUnaryHandler(
+		RunthreadServiceDisconnectProviderConnectionProcedure,
+		svc.DisconnectProviderConnection,
+		connect.WithSchema(runthreadServiceMethods.ByName("DisconnectProviderConnection")),
+		connect.WithHandlerOptions(opts...),
+	)
 	runthreadServiceCompleteImportedActivityHandler := connect.NewUnaryHandler(
 		RunthreadServiceCompleteImportedActivityProcedure,
 		svc.CompleteImportedActivity,
@@ -168,6 +191,8 @@ func NewRunthreadServiceHandler(svc RunthreadServiceHandler, opts ...connect.Han
 			runthreadServiceGetProviderConnectionStatusHandler.ServeHTTP(w, r)
 		case RunthreadServiceStartProviderConnectionProcedure:
 			runthreadServiceStartProviderConnectionHandler.ServeHTTP(w, r)
+		case RunthreadServiceDisconnectProviderConnectionProcedure:
+			runthreadServiceDisconnectProviderConnectionHandler.ServeHTTP(w, r)
 		case RunthreadServiceCompleteImportedActivityProcedure:
 			runthreadServiceCompleteImportedActivityHandler.ServeHTTP(w, r)
 		default:
@@ -189,6 +214,10 @@ func (UnimplementedRunthreadServiceHandler) GetProviderConnectionStatus(context.
 
 func (UnimplementedRunthreadServiceHandler) StartProviderConnection(context.Context, *connect.Request[v1.StartProviderConnectionRequest]) (*connect.Response[v1.StartProviderConnectionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("runthread.v1.RunthreadService.StartProviderConnection is not implemented"))
+}
+
+func (UnimplementedRunthreadServiceHandler) DisconnectProviderConnection(context.Context, *connect.Request[v1.DisconnectProviderConnectionRequest]) (*connect.Response[v1.DisconnectProviderConnectionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("runthread.v1.RunthreadService.DisconnectProviderConnection is not implemented"))
 }
 
 func (UnimplementedRunthreadServiceHandler) CompleteImportedActivity(context.Context, *connect.Request[v1.CompleteImportedActivityRequest]) (*connect.Response[v1.CompleteImportedActivityResponse], error) {

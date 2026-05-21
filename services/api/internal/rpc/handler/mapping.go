@@ -106,6 +106,26 @@ func startProviderConnectionResponseFromApp(response app.StartProviderConnection
 	}
 }
 
+func disconnectProviderConnectionRequestToApp(req *rpcv1.DisconnectProviderConnectionRequest) (app.DisconnectProviderConnectionRequest, error) {
+	if req == nil {
+		return app.DisconnectProviderConnectionRequest{}, fmt.Errorf("request is required")
+	}
+
+	// TODO: Replace request-supplied athlete ID with authenticated user context
+	// once auth exists.
+	return app.DisconnectProviderConnectionRequest{
+		AthleteID:            req.GetAthleteId(),
+		Provider:             providerToApp(req.GetProvider()),
+		ProviderConnectionID: req.GetProviderConnectionId(),
+	}, nil
+}
+
+func disconnectProviderConnectionResponseFromApp(response app.DisconnectProviderConnectionResponse) *rpcv1.DisconnectProviderConnectionResponse {
+	return &rpcv1.DisconnectProviderConnectionResponse{
+		Connection: providerConnectionFromRepository(response.Connection),
+	}
+}
+
 func completeImportedActivityRequestToApp(req *rpcv1.CompleteImportedActivityRequest) (app.CompleteImportedActivityRequest, error) {
 	if req == nil {
 		return app.CompleteImportedActivityRequest{}, fmt.Errorf("request is required")
