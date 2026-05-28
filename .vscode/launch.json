@@ -14,6 +14,18 @@
       }
     },
     {
+      "name": "Website",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev -- --host 127.0.0.1 --port 4321",
+      "cwd": "${workspaceFolder}/apps/web",
+      "serverReadyAction": {
+        "pattern": "Local\\s+http://127\\.0\\.0\\.1:([0-9]+)/",
+        "uriFormat": "http://127.0.0.1:%s/",
+        "action": "openExternally"
+      }
+    },
+    {
       "name": "Mobile (physical device)",
       "type": "dart",
       "request": "launch",
@@ -44,6 +56,14 @@
       "configurations": [
         "API",
         "Mobile (Android emulator)"
+      ],
+      "stopAll": true
+    },
+    {
+      "name": "API + Website",
+      "configurations": [
+        "API",
+        "Website"
       ],
       "stopAll": true
     }

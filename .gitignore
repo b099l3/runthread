@@ -12,6 +12,7 @@
 .env
 .env.*
 !.env.example
+!apps/web/.env.example
 apps/mobile/env/*.env
 
 # Go
@@ -35,3 +36,6 @@ pubspec.lock
 *.log
 tmp/
 coverage/
+node_modules/
+dist/
+.astro/

@@ -19,6 +19,7 @@ The product should become a real business, so the repo is structured for a Flutt
 runthread/
   apps/
     mobile/          Flutter mobile MVP app
+    web/             Astro landing page for Runthread.app beta signups
   services/
     api/             Go backend service
   docs/              Product, architecture, domain, roadmap, decisions
@@ -166,6 +167,19 @@ cd apps/mobile
 asdf exec flutter analyze
 asdf exec flutter test
 ```
+
+Run the landing page:
+
+```sh
+cd apps/web
+npm install
+npm run dev
+```
+
+The landing page is a static Astro app intended for Vercel or another static
+frontend host. It uses `PUBLIC_LOOPS_FORM_ID` to post beta waitlist signups to
+Loops and should be deployed separately from the Go API. Keep the API on Render
+under a separate hostname such as `api.runthread.app`.
 
 The mobile app defaults to `http://localhost:8080` and currently uses Connect's JSON protocol from a small API client boundary until Dart protobuf/ConnectRPC generation is added. It shows the weekly plan by default, includes workout detail and history views, and keeps completion read-only until real imported activity flow exists. If the local backend is unavailable, or if a non-demo backend does not have the current demo athlete and goal records, the app falls back to local demo plan data and shows a visible demo-data notice.
 

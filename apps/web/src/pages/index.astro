@@ -1,0 +1,243 @@
+---
+import "../styles/global.css";
+
+const siteUrl = import.meta.env.PUBLIC_SITE_URL ?? "https://runthread.app";
+const loopsFormId = import.meta.env.PUBLIC_LOOPS_FORM_ID ?? "";
+const signupAction = loopsFormId
+  ? `https://app.loops.so/api/newsletter-form/${loopsFormId}`
+  : "";
+
+const features = [
+  {
+    label: "Adaptive planning",
+    title: "Training weeks that adjust without drama.",
+    body: "Runthread starts with a practical plan, then responds to completed, missed, and underperformed sessions with deterministic changes you can understand.",
+  },
+  {
+    label: "Strava-first beta",
+    title: "Your runs flow in from the tools you already use.",
+    body: "The beta path focuses on Strava-backed imports so workout completion is driven by real activity data instead of manual checkboxes.",
+  },
+  {
+    label: "Workout matching",
+    title: "Completed activities are matched to the right workout.",
+    body: "Runs are compared against the plan by date, distance, duration, and type, with uncertain matches kept visible for review.",
+  },
+  {
+    label: "Calm explanations",
+    title: "When the plan changes, you see why.",
+    body: "Runthread keeps adaptation conservative and explainable, so the product feels like a steady training partner instead of a black box.",
+  },
+];
+
+const flow = [
+  ["Plan", "Start the week with a clear set of runs."],
+  ["Run", "Complete sessions using your normal tracker."],
+  ["Import", "Bring provider activities into Runthread."],
+  ["Match", "Connect each activity to the intended workout."],
+  ["Adapt", "Adjust the week when real life changes the plan."],
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Runthread | Adaptive Running Training</title>
+    <meta
+      name="description"
+      content="Runthread is an adaptive running training app that connects planned workouts to real activity data and keeps plan changes calm and explainable."
+    />
+    <link rel="canonical" href={siteUrl} />
+    <meta property="og:title" content="Runthread" />
+    <meta
+      property="og:description"
+      content="Adaptive running plans, Strava-backed activity import, workout matching, and calm training changes."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={siteUrl} />
+    <meta name="theme-color" content="#f6f2e8" />
+  </head>
+  <body>
+    <header class="site-header" aria-label="Runthread">
+      <a class="brand" href="/" aria-label="Runthread home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        Runthread
+      </a>
+      <nav aria-label="Primary">
+        <a href="#features">Features</a>
+        <a href="#flow">How it works</a>
+        <a href="#beta">Beta</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero section-band">
+        <div class="hero-copy" data-reveal>
+          <p class="eyebrow">Private beta waitlist</p>
+          <h1>Adaptive running plans that keep up with your real training.</h1>
+          <p class="lede">
+            Runthread connects planned workouts to completed activities, matches
+            the work you actually did, and adjusts your week with clear,
+            conservative reasoning.
+          </p>
+
+          <form
+            class="signup-form"
+            data-waitlist-form
+            action={signupAction}
+            method="post"
+            aria-describedby="signup-status signup-note"
+          >
+            <label class="sr-only" for="hero-email">Email address</label>
+            <input
+              id="hero-email"
+              type="email"
+              name="email"
+              autocomplete="email"
+              inputmode="email"
+              placeholder="you@example.com"
+              required
+            />
+            <input type="hidden" name="source" value="runthread.app landing_page" />
+            <input type="hidden" name="userGroup" value="Beta waitlist" />
+            <input type="hidden" name="notes" value="Runthread beta waitlist signup" />
+            <button type="submit">Join beta list</button>
+            <p class="form-status" id="signup-status" data-form-status role="status"></p>
+          </form>
+          <p class="form-note" id="signup-note">
+            Early access will be invite-only while Strava import and plan adaptation are validated.
+          </p>
+        </div>
+
+        <div class="product-preview" data-reveal>
+          <div class="phone-shell" aria-label="Runthread weekly plan preview">
+            <div class="phone-top">
+              <span></span>
+              <strong>Week 12</strong>
+              <span class="sync-pill">Synced</span>
+            </div>
+            <div class="week-meter">
+              <div>
+                <span>32.4 km</span>
+                <small>Planned volume</small>
+              </div>
+              <div>
+                <span>4 runs</span>
+                <small>This week</small>
+              </div>
+            </div>
+            <div class="workout-card active">
+              <p>Today</p>
+              <h2>Easy run</h2>
+              <div class="metric-row">
+                <span>7.2 km</span>
+                <span>Zone 2</span>
+                <span>Matched</span>
+              </div>
+            </div>
+            <div class="workout-card">
+              <p>Thursday</p>
+              <h2>Threshold blocks</h2>
+              <div class="metric-row">
+                <span>8.5 km</span>
+                <span>3 x 8 min</span>
+              </div>
+            </div>
+            <div class="adaptation-panel">
+              <p>Plan note</p>
+              <strong>Long run reduced by 1.5 km after a partial completion.</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-band feature-band" id="features">
+        <div class="section-heading" data-reveal>
+          <p class="eyebrow">Feature showcase</p>
+          <h2>Built around the loop runners actually live in.</h2>
+        </div>
+        <div class="feature-grid">
+          {
+            features.map((feature) => (
+              <article class="feature-card" data-reveal>
+                <p>{feature.label}</p>
+                <h3>{feature.title}</h3>
+                <span>{feature.body}</span>
+              </article>
+            ))
+          }
+        </div>
+      </section>
+
+      <section class="section-band flow-band" id="flow">
+        <div class="section-heading compact" data-reveal>
+          <p class="eyebrow">Product flow</p>
+          <h2>Plan, run, import, match, adapt.</h2>
+        </div>
+        <ol class="flow-list" aria-label="Runthread product flow">
+          {
+            flow.map(([title, body], index) => (
+              <li data-reveal>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <h3>{title}</h3>
+                <p>{body}</p>
+              </li>
+            ))
+          }
+        </ol>
+      </section>
+
+      <section class="section-band beta-band" id="beta">
+        <div class="beta-panel" data-reveal>
+          <div>
+            <p class="eyebrow">Beta access</p>
+            <h2>Join the list for the first Runthread beta builds.</h2>
+            <p>
+              The initial beta is focused on weekly plan viewing, Strava-backed
+              activity import, workout matching, and deterministic adaptation.
+            </p>
+          </div>
+          <form
+            class="signup-form compact-form"
+            data-waitlist-form
+            action={signupAction}
+            method="post"
+            aria-describedby="footer-signup-status"
+          >
+            <label class="sr-only" for="footer-email">Email address</label>
+            <input
+              id="footer-email"
+              type="email"
+              name="email"
+              autocomplete="email"
+              inputmode="email"
+              placeholder="you@example.com"
+              required
+            />
+            <input type="hidden" name="source" value="runthread.app landing_page" />
+            <input type="hidden" name="userGroup" value="Beta waitlist" />
+            <input type="hidden" name="notes" value="Runthread beta waitlist signup" />
+            <button type="submit">Request invite</button>
+            <p
+              class="form-status"
+              id="footer-signup-status"
+              data-form-status
+              role="status"
+            >
+            </p>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Runthread</span>
+      <span>Adaptive running training for private beta.</span>
+    </footer>
+
+    <script src="../scripts/landing.ts"></script>
+  </body>
+</html>
