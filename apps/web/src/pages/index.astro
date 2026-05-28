@@ -37,6 +37,44 @@ const flow = [
   ["Match", "Connect each activity to the intended workout."],
   ["Adapt", "Adjust the week when real life changes the plan."],
 ];
+
+const stages = [
+  {
+    key: "plan",
+    label: "Plan",
+    title: "32.4 km week built around your rhythm",
+    body: "Easy days, threshold work, and the long run land where they can actually happen.",
+    metric: "4 runs",
+  },
+  {
+    key: "run",
+    label: "Run",
+    title: "Your real activity becomes the source of truth",
+    body: "Keep recording with your normal tracker. Runthread waits for the completed work.",
+    metric: "7.2 km",
+  },
+  {
+    key: "import",
+    label: "Import",
+    title: "Strava pulls the session into the loop",
+    body: "Provider data stays behind the scenes while Runthread normalises the useful training signal.",
+    metric: "Synced",
+  },
+  {
+    key: "match",
+    label: "Match",
+    title: "The run is matched to today, not guessed",
+    body: "Date, distance, duration, and workout type combine into a confidence score you can review.",
+    metric: "94%",
+  },
+  {
+    key: "adapt",
+    label: "Adapt",
+    title: "Thursday gets lighter after a partial finish",
+    body: "The plan changes conservatively and explains the reason in plain language.",
+    metric: "-1.5 km",
+  },
+];
 ---
 
 <!doctype html>
@@ -74,10 +112,12 @@ const flow = [
     </header>
 
     <main>
-      <section class="hero section-band">
+      <section class="hero-shell">
+        <div class="hero-orbit" aria-hidden="true"></div>
+        <div class="hero section-band">
         <div class="hero-copy" data-reveal>
           <p class="eyebrow">Private beta waitlist</p>
-          <h1>Adaptive running plans that keep up with your real training.</h1>
+          <h1>Training plans with a live thread back to reality.</h1>
           <p class="lede">
             Runthread connects planned workouts to completed activities, matches
             the work you actually did, and adjusts your week with clear,
@@ -112,45 +152,70 @@ const flow = [
           </p>
         </div>
 
-        <div class="product-preview" data-reveal>
-          <div class="phone-shell" aria-label="Runthread weekly plan preview">
-            <div class="phone-top">
-              <span></span>
-              <strong>Week 12</strong>
-              <span class="sync-pill">Synced</span>
+        <div class="thread-demo" data-reveal data-thread-demo>
+          <div class="thread-stage">
+            <div class="stage-topline">
+              <span>Week 12</span>
+              <strong data-thread-metric>{stages[0].metric}</strong>
             </div>
-            <div class="week-meter">
-              <div>
-                <span>32.4 km</span>
-                <small>Planned volume</small>
-              </div>
-              <div>
-                <span>4 runs</span>
-                <small>This week</small>
-              </div>
+            <div class="route-board" aria-hidden="true">
+              <svg viewBox="0 0 560 320" role="img">
+                <defs>
+                  <linearGradient id="threadGradient" x1="0%" x2="100%" y1="0%" y2="0%">
+                    <stop offset="0%" stop-color="#d95f43" />
+                    <stop offset="52%" stop-color="#d5a83b" />
+                    <stop offset="100%" stop-color="#4ac7a5" />
+                  </linearGradient>
+                </defs>
+                <path
+                  class="route-shadow"
+                  d="M36 232 C118 60 210 300 296 128 S432 70 524 218"
+                />
+                <path
+                  class="route-base"
+                  d="M36 232 C118 60 210 300 296 128 S432 70 524 218"
+                />
+                <path
+                  class="route-progress"
+                  data-route-progress
+                  d="M36 232 C118 60 210 300 296 128 S432 70 524 218"
+                />
+              </svg>
+              {
+                stages.map((stage, index) => (
+                  <button
+                    class={`route-point route-point-${index + 1}${index === 0 ? " is-active" : ""}`}
+                    type="button"
+                    data-thread-step={String(index)}
+                    aria-label={`Show ${stage.label} stage`}
+                    aria-pressed={index === 0 ? "true" : "false"}
+                  >
+                    <span>{stage.label}</span>
+                  </button>
+                ))
+              }
             </div>
-            <div class="workout-card active">
-              <p>Today</p>
-              <h2>Easy run</h2>
-              <div class="metric-row">
-                <span>7.2 km</span>
-                <span>Zone 2</span>
-                <span>Matched</span>
-              </div>
-            </div>
-            <div class="workout-card">
-              <p>Thursday</p>
-              <h2>Threshold blocks</h2>
-              <div class="metric-row">
-                <span>8.5 km</span>
-                <span>3 x 8 min</span>
-              </div>
-            </div>
-            <div class="adaptation-panel">
-              <p>Plan note</p>
-              <strong>Long run reduced by 1.5 km after a partial completion.</strong>
+            <div class="stage-card">
+              <p data-thread-label>{stages[0].label}</p>
+              <h2 data-thread-title>{stages[0].title}</h2>
+              <span data-thread-body>{stages[0].body}</span>
             </div>
           </div>
+          <div class="thread-tabs" aria-label="Preview Runthread training loop">
+            {
+              stages.map((stage, index) => (
+                <button
+                  class={index === 0 ? "is-active" : ""}
+                  type="button"
+                  data-thread-tab={String(index)}
+                  aria-pressed={index === 0 ? "true" : "false"}
+                >
+                  {stage.label}
+                </button>
+              ))
+            }
+          </div>
+        </div>
         </div>
       </section>
 

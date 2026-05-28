@@ -10,6 +10,18 @@ npm install
 npm run dev
 ```
 
+For phone testing on the same Wi-Fi network:
+
+```sh
+npm run dev:lan
+```
+
+Then open this from your phone:
+
+```text
+http://<your-mac-lan-ip>:4321/
+```
+
 ## Environment
 
 Copy the example file and add the Loops form ID from the Loops form builder:
