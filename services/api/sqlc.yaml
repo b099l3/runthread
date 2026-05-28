@@ -4,6 +4,10 @@ sql:
     schema:
       - "internal/postgres/migrations/000001_initial_core_schema.up.sql"
       - "internal/postgres/migrations/000002_provider_connections.up.sql"
+      - "internal/postgres/migrations/000003_provider_tokens.up.sql"
+      - "internal/postgres/migrations/000004_provider_webhook_events.up.sql"
+      - "internal/postgres/migrations/000005_provider_activity_deleted_status.up.sql"
+      - "internal/postgres/migrations/000006_athlete_preferred_run_days_bigint.up.sql"
     queries: "internal/postgres/queries"
     gen:
       go:

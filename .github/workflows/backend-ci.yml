@@ -7,6 +7,7 @@ on:
       - "services/api/**"
       - "scripts/db/**"
       - "infra/**"
+      - ".tool-versions"
   push:
     branches:
       - main
@@ -15,6 +16,7 @@ on:
       - "services/api/**"
       - "scripts/db/**"
       - "infra/**"
+      - ".tool-versions"
 
 permissions:
   contents: read
@@ -55,6 +57,9 @@ jobs:
         run: |
           go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
           go install github.com/bufbuild/buf/cmd/buf@v1.69.0
+
+      - name: Lint protobuf
+        run: buf lint
 
       - name: Regenerate database code
         run: sqlc generate

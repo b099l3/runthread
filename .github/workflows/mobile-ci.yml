@@ -5,12 +5,14 @@ on:
     paths:
       - ".github/workflows/mobile-ci.yml"
       - "apps/mobile/**"
+      - ".tool-versions"
   push:
     branches:
       - main
     paths:
       - ".github/workflows/mobile-ci.yml"
       - "apps/mobile/**"
+      - ".tool-versions"
 
 permissions:
   contents: read

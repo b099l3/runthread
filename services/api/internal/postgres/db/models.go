@@ -137,6 +137,22 @@ type ProviderImportEvent struct {
 	Error                sql.NullString `json:"error"`
 }
 
+type ProviderToken struct {
+	Reference            string         `json:"reference"`
+	Provider             string         `json:"provider"`
+	ProviderConnectionID string         `json:"provider_connection_id"`
+	ProviderUserID       sql.NullString `json:"provider_user_id"`
+	EncryptedToken       []byte         `json:"encrypted_token"`
+	CreatedAt            time.Time      `json:"created_at"`
+	UpdatedAt            time.Time      `json:"updated_at"`
+}
+
+type ProviderWebhookEvent struct {
+	Provider    string    `json:"provider"`
+	EventID     string    `json:"event_id"`
+	FirstSeenAt time.Time `json:"first_seen_at"`
+}
+
 type TrainingGoal struct {
 	ID                    uuid.UUID       `json:"id"`
 	AthleteID             uuid.UUID       `json:"athlete_id"`
