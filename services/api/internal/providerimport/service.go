@@ -166,6 +166,9 @@ func (s Service) ImportActivity(ctx context.Context, req ImportRequest) (ImportR
 	if err := importedActivity.Validate(); err != nil {
 		return s.fail(ctx, result, fmt.Errorf("invalid imported activity: %w", err))
 	}
+	if activity.ImportedActivityID != "" {
+		importedActivity.ID = activity.ImportedActivityID
+	}
 	if err := s.ImportedActivities.SaveImportedActivity(ctx, importedActivity); err != nil {
 		return s.fail(ctx, result, fmt.Errorf("save imported activity: %w", err))
 	}

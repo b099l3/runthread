@@ -82,7 +82,7 @@ Reason: Strava can help validate the activity import loop faster because many ru
 Implications:
 
 - The product is no longer Garmin-first in the MVP plan.
-- Strava work starts with docs and mock payloads before real OAuth or API calls.
+- Strava work started with docs and mock payloads before real OAuth or API calls; OAuth and provider API boundaries now exist behind backend-owned provider packages.
 - The same provider-neutral pipeline must remain usable by Garmin later.
 
 ## ADR-0009: Keep Provider-Specific Data Out of Core Domain Logic

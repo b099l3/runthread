@@ -105,6 +105,55 @@ func TestCompleteProviderImportFindsBestWorkoutWhenWorkoutIDIsOmitted(t *testing
 	}
 }
 
+func TestCompleteProviderImportPersistsRideCrossTrainingCompletion(t *testing.T) {
+	ctx := context.Background()
+	store := repository.NewInMemoryStore()
+	profile := providerImportProfile()
+	goal := providerImportGoal(profile.ID)
+	week := providerImportWeek(t, profile, goal, providerImportDate(2026, time.June, 3))
+	workout := providerImportFirstRunWorkout(t, week)
+	connection := providerImportConnection(profile.ID)
+	seedProviderImportRecords(t, ctx, store, profile, goal, week, connection)
+
+	ride := providerImportActivityForWorkout(profile.ID, workout)
+	ride.ID = "imported-ride-cross-training"
+	ride.Type = domain.ActivityTypeRide
+	ride.Distance = domain.Distance{Meters: workout.TargetDistance.Meters * 3}
+
+	response, err := providerImportService(t, store).CompleteProviderImport(ctx, CompleteProviderImportRequest{
+		Import: providerimport.ImportRequest{
+			AthleteID:            profile.ID,
+			ProviderConnectionID: connection.ID,
+			ProviderActivity: providerimport.ProviderActivityInput{
+				ProviderActivityID:   "garmin-provider-ride-1",
+				ProviderActivityType: "cycling",
+				StartedAt:            workout.ScheduledFor.Add(7 * time.Hour),
+			},
+			ImportedActivity: ride,
+		},
+		PlanWeek: week,
+		ResultID: "result-provider-ride-1",
+		Outcome:  domain.WorkoutOutcomeCompletedAsPlanned,
+	})
+	if err != nil {
+		t.Fatalf("CompleteProviderImport returned error: %v", err)
+	}
+
+	if response.ProviderImport.ImportedActivity.Type != domain.ActivityTypeRide {
+		t.Fatalf("imported activity type = %q, want ride", response.ProviderImport.ImportedActivity.Type)
+	}
+	if response.WorkoutMatch.Status != domain.WorkoutMatchStatusMatched {
+		t.Fatalf("workout match status = %q, want matched", response.WorkoutMatch.Status)
+	}
+	if response.WorkoutMatch.Confidence != domain.MatchConfidenceMedium {
+		t.Fatalf("workout match confidence = %q, want medium", response.WorkoutMatch.Confidence)
+	}
+	if response.WorkoutResult.Notes != "Completed by ride cross-training activity." {
+		t.Fatalf("workout result notes = %q", response.WorkoutResult.Notes)
+	}
+	assertProviderImportCompletionPersisted(t, ctx, store, response)
+}
+
 func TestCompleteProviderImportRejectsIgnoredImport(t *testing.T) {
 	ctx := context.Background()
 	store := repository.NewInMemoryStore()

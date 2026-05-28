@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
 
+import 'models/distance_unit.dart';
 import 'models/plan_week.dart';
 
 class WorkoutDetailScreen extends StatelessWidget {
   const WorkoutDetailScreen({
     required this.workout,
     required this.completion,
+    required this.distanceUnit,
     super.key,
   });
 
   final PlannedWorkout workout;
   final WorkoutCompletionState completion;
+  final DistanceUnit distanceUnit;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final distanceLabel = workout.distanceLabel(distanceUnit);
     return Scaffold(
       appBar: AppBar(title: const Text('Workout')),
       body: SafeArea(
@@ -40,9 +44,7 @@ class WorkoutDetailScreen extends StatelessWidget {
                 _DetailRow(label: 'Status', value: workout.status),
                 _DetailRow(
                   label: 'Target distance',
-                  value: workout.distanceLabel.isEmpty
-                      ? 'None'
-                      : workout.distanceLabel,
+                  value: distanceLabel.isEmpty ? 'None' : distanceLabel,
                 ),
                 _DetailRow(
                   label: 'Target duration',
@@ -61,7 +63,10 @@ class WorkoutDetailScreen extends StatelessWidget {
             const SizedBox(height: 14),
             _CompletionActionSection(completion: completion),
             const SizedBox(height: 14),
-            _CompletionSection(completion: completion),
+            _CompletionSection(
+              completion: completion,
+              distanceUnit: distanceUnit,
+            ),
             const SizedBox(height: 14),
             _DetailSection(
               children: [
@@ -138,9 +143,13 @@ class _CompletionActionSection extends StatelessWidget {
 }
 
 class _CompletionSection extends StatelessWidget {
-  const _CompletionSection({required this.completion});
+  const _CompletionSection({
+    required this.completion,
+    required this.distanceUnit,
+  });
 
   final WorkoutCompletionState completion;
+  final DistanceUnit distanceUnit;
 
   @override
   Widget build(BuildContext context) {
@@ -165,6 +174,7 @@ class _CompletionSection extends StatelessWidget {
     final activity = completion.importedActivity;
     final result = completion.workoutResult;
     final match = completion.workoutMatch;
+    final activityDistanceLabel = activity?.distanceLabel(distanceUnit) ?? '';
 
     return _DetailSection(
       children: [
@@ -184,9 +194,9 @@ class _CompletionSection extends StatelessWidget {
           _DetailRow(label: 'Activity type', value: activity.type),
           _DetailRow(
             label: 'Activity distance',
-            value: activity.distanceLabel.isEmpty
+            value: activityDistanceLabel.isEmpty
                 ? 'None'
-                : activity.distanceLabel,
+                : activityDistanceLabel,
           ),
           _DetailRow(
             label: 'Activity duration',

@@ -365,21 +365,45 @@ func TestStravaOAuthCallbackConnectsPendingConnection(t *testing.T) {
 	if imported.AthleteID != "athlete-1" {
 		t.Fatalf("imported athlete = %q, want Runthread athlete", imported.AthleteID)
 	}
-	matches, err := store.GetWorkoutMatch(context.Background(), "match-generated-2-easy-"+imported.ID)
+	currentPlan, err := app.CurrentPlanWeekService{
+		Store:   store,
+		Planner: planning.NewWeeklyPlanner(),
+	}.GetCurrentPlanWeek(context.Background(), app.GetCurrentPlanWeekRequest{
+		AthleteID:      imported.AthleteID,
+		GoalID:         currentGoal.ID,
+		TargetWeekDate: imported.StartedAt,
+	})
 	if err != nil {
-		t.Fatalf("GetWorkoutMatch returned error: %v", err)
+		t.Fatalf("GetCurrentPlanWeek returned error: %v", err)
+	}
+	matchedWorkout := firstWorkoutOfTypeInWeek(t, currentPlan.PlanWeek, domain.WorkoutTypeEasy)
+	var matches domain.WorkoutMatch
+	for _, candidate := range currentPlan.WorkoutMatches {
+		if candidate.PlannedWorkoutID == matchedWorkout.ID && candidate.ImportedActivityID == imported.ID {
+			matches = candidate
+			break
+		}
+	}
+	if matches.ID == "" {
+		t.Fatal("expected workout match for imported activity")
 	}
 	if matches.Status != domain.WorkoutMatchStatusMatched {
 		t.Fatalf("match status = %q, want matched", matches.Status)
 	}
-	result, err := store.GetWorkoutResult(context.Background(), "result-"+matches.ID)
-	if err != nil {
-		t.Fatalf("GetWorkoutResult returned error: %v", err)
+	var result domain.WorkoutResult
+	for _, candidate := range currentPlan.WorkoutResults {
+		if candidate.PlannedWorkoutID == matchedWorkout.ID && candidate.ImportedActivityID == imported.ID {
+			result = candidate
+			break
+		}
+	}
+	if result.ID == "" {
+		t.Fatal("expected workout result for imported activity")
 	}
 	if result.ImportedActivityID != imported.ID {
 		t.Fatalf("result imported activity = %q, want %q", result.ImportedActivityID, imported.ID)
 	}
-	week, err := store.GetPlanWeek(context.Background(), "generated-week")
+	week, err := store.GetPlanWeek(context.Background(), currentPlan.PlanWeek.ID)
 	if err != nil {
 		t.Fatalf("GetPlanWeek returned error: %v", err)
 	}
@@ -811,6 +835,18 @@ func firstWorkoutOfType(t *testing.T, profile domain.AthleteProfile, goal domain
 		}
 	}
 	t.Fatalf("expected generated workout type %q", workoutType)
+	return domain.PlannedWorkout{}
+}
+
+func firstWorkoutOfTypeInWeek(t *testing.T, week domain.PlanWeek, workoutType domain.WorkoutType) domain.PlannedWorkout {
+	t.Helper()
+
+	for _, workout := range week.Workouts {
+		if workout.Type == workoutType {
+			return workout
+		}
+	}
+	t.Fatalf("expected workout type %q", workoutType)
 	return domain.PlannedWorkout{}
 }
 

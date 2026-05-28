@@ -239,6 +239,7 @@ enum WorkoutType {
   WORKOUT_TYPE_RACE = 5;
   WORKOUT_TYPE_REST = 6;
   WORKOUT_TYPE_STRENGTH = 7;
+  WORKOUT_TYPE_RIDE = 8;
 }
 
 enum PlannedWorkoutStatus {
@@ -257,6 +258,7 @@ enum ActivityType {
   ACTIVITY_TYPE_TREADMILL = 3;
   ACTIVITY_TYPE_WALK = 4;
   ACTIVITY_TYPE_OTHER = 5;
+  ACTIVITY_TYPE_RIDE = 6;
 }
 
 enum WorkoutMatchStatus {

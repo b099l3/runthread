@@ -12,9 +12,11 @@
 .env
 .env.*
 !.env.example
+apps/mobile/env/*.env
 
 # Go
 bin/
+__debug_bin*
 *.test
 *.out
 coverage.out

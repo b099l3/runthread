@@ -37,6 +37,7 @@ type PlannedWorkoutRepository interface {
 type ImportedActivityRepository interface {
 	SaveImportedActivity(context.Context, domain.ImportedActivity) error
 	GetImportedActivity(context.Context, string) (domain.ImportedActivity, error)
+	ListImportedActivitiesByAthlete(context.Context, string) ([]domain.ImportedActivity, error)
 }
 
 type WorkoutMatchRepository interface {

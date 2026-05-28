@@ -114,6 +114,11 @@ func TestImportedActivityValidateIsProviderNeutral(t *testing.T) {
 		t.Fatalf("expected valid imported activity: %v", err)
 	}
 
+	activity.Type = ActivityTypeRide
+	if err := activity.Validate(); err != nil {
+		t.Fatalf("expected ride imported activity to be valid: %v", err)
+	}
+
 	activity.Type = ActivityType("garmin_running_activity")
 	assertValidationError(t, activity.Validate(), "invalid activity type")
 }

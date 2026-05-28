@@ -75,6 +75,27 @@ func (r *ImportedActivityRepository) GetImportedActivity(ctx context.Context, id
 	return importedActivityFromDB(row), nil
 }
 
+func (r *ImportedActivityRepository) ListImportedActivitiesByAthlete(ctx context.Context, athleteID string) ([]domain.ImportedActivity, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	parsedID, err := uuid.Parse(athleteID)
+	if err != nil {
+		return nil, fmt.Errorf("parse imported activity athlete id: %w", err)
+	}
+
+	rows, err := r.queries.ListImportedActivitiesByAthlete(ctx, parsedID)
+	if err != nil {
+		return nil, fmt.Errorf("list imported activities by athlete: %w", err)
+	}
+	activities := make([]domain.ImportedActivity, 0, len(rows))
+	for _, row := range rows {
+		activities = append(activities, importedActivityFromDB(row))
+	}
+	return activities, nil
+}
+
 type WorkoutMatchRepository struct {
 	queries postgresdb.Querier
 }

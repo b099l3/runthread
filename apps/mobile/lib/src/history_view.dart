@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 
 import 'demo/demo_fallback_api.dart';
+import 'models/distance_unit.dart';
 import 'models/plan_week.dart';
 
 class HistoryView extends StatelessWidget {
-  const HistoryView({required this.currentPlanWeek, super.key});
+  const HistoryView({
+    required this.currentPlanWeek,
+    required this.distanceUnit,
+    super.key,
+  });
 
   final CurrentPlanWeek currentPlanWeek;
+  final DistanceUnit distanceUnit;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +37,10 @@ class HistoryView extends StatelessWidget {
           const _DemoNotice(),
           const SizedBox(height: 14),
         ],
-        _ActivityHistory(activities: currentPlanWeek.importedActivities),
+        _ActivityHistory(
+          activities: currentPlanWeek.importedActivities,
+          distanceUnit: distanceUnit,
+        ),
         const SizedBox(height: 14),
         _AdaptationHistory(events: currentPlanWeek.adaptationEvents),
       ],
@@ -80,9 +89,13 @@ class _DemoNotice extends StatelessWidget {
 }
 
 class _ActivityHistory extends StatelessWidget {
-  const _ActivityHistory({required this.activities});
+  const _ActivityHistory({
+    required this.activities,
+    required this.distanceUnit,
+  });
 
   final List<ImportedActivity> activities;
+  final DistanceUnit distanceUnit;
 
   @override
   Widget build(BuildContext context) {
@@ -93,21 +106,34 @@ class _ActivityHistory extends StatelessWidget {
       isEmpty: activities.isEmpty,
       children: [
         for (final activity in activities) ...[
-          Text(
-            activity.type.isEmpty ? 'Imported activity' : activity.type,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            [
-              if (activity.distanceLabel.isNotEmpty) activity.distanceLabel,
-              if (activity.durationLabel.isNotEmpty) activity.durationLabel,
-            ].join(' · '),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+          Builder(
+            builder: (context) {
+              final distanceLabel = activity.distanceLabel(distanceUnit);
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    activity.type.isEmpty ? 'Imported activity' : activity.type,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    [
+                      if (activity.startedDateLabel.isNotEmpty)
+                        activity.startedDateLabel,
+                      if (distanceLabel.isNotEmpty) distanceLabel,
+                      if (activity.durationLabel.isNotEmpty)
+                        activity.durationLabel,
+                    ].join(' · '),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           if (activity != activities.last) const SizedBox(height: 12),
         ],

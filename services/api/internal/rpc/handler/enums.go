@@ -106,6 +106,8 @@ func workoutTypeFromDomain(value domain.WorkoutType) rpcv1.WorkoutType {
 		return rpcv1.WorkoutType_WORKOUT_TYPE_REST
 	case domain.WorkoutTypeStrength:
 		return rpcv1.WorkoutType_WORKOUT_TYPE_STRENGTH
+	case domain.WorkoutTypeRide:
+		return rpcv1.WorkoutType_WORKOUT_TYPE_RIDE
 	default:
 		return rpcv1.WorkoutType_WORKOUT_TYPE_UNSPECIFIED
 	}
@@ -140,6 +142,8 @@ func activityTypeToDomain(value rpcv1.ActivityType) domain.ActivityType {
 		return domain.ActivityTypeWalk
 	case rpcv1.ActivityType_ACTIVITY_TYPE_OTHER:
 		return domain.ActivityTypeOther
+	case rpcv1.ActivityType_ACTIVITY_TYPE_RIDE:
+		return domain.ActivityTypeRide
 	default:
 		return ""
 	}
@@ -157,6 +161,8 @@ func activityTypeFromDomain(value domain.ActivityType) rpcv1.ActivityType {
 		return rpcv1.ActivityType_ACTIVITY_TYPE_WALK
 	case domain.ActivityTypeOther:
 		return rpcv1.ActivityType_ACTIVITY_TYPE_OTHER
+	case domain.ActivityTypeRide:
+		return rpcv1.ActivityType_ACTIVITY_TYPE_RIDE
 	default:
 		return rpcv1.ActivityType_ACTIVITY_TYPE_UNSPECIFIED
 	}

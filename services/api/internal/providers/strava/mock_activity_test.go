@@ -52,6 +52,15 @@ func TestNormaliseMockActivityMapsTrailAndVirtualRuns(t *testing.T) {
 	}
 }
 
+func TestNormaliseMockActivityMapsRideVariants(t *testing.T) {
+	for _, sportType := range []string{"Ride", "VirtualRide", "virtual_ride", "GravelRide", "MountainBikeRide", "mountain_bike_ride"} {
+		activity := mustNormalise(t, validPayload(sportType))
+		if activity.Type != domain.ActivityTypeRide {
+			t.Fatalf("sport type %q mapped to %q, want ride", sportType, activity.Type)
+		}
+	}
+}
+
 func TestNormaliseMockActivityUsesElapsedTimeWhenMovingTimeMissing(t *testing.T) {
 	payload := validPayload("Run")
 	payload.MovingTime = 0
@@ -63,8 +72,8 @@ func TestNormaliseMockActivityUsesElapsedTimeWhenMovingTimeMissing(t *testing.T)
 	}
 }
 
-func TestNormaliseMockActivityRejectsNonRunActivity(t *testing.T) {
-	_, err := NormaliseMockActivity(validPayload("Ride"))
+func TestNormaliseMockActivityRejectsUnsupportedActivity(t *testing.T) {
+	_, err := NormaliseMockActivity(validPayload("Swim"))
 
 	if !errors.Is(err, ErrUnsupportedActivityType) {
 		t.Fatalf("expected unsupported activity type error, got %v", err)

@@ -505,7 +505,7 @@ Still demo-shaped:
 - The backend generates the target week during the request instead of loading a persisted current plan.
 - Imported activity data is supplied inline instead of being created by Garmin/provider import and referenced by ID.
 - The in-memory default loses data on restart, and the Postgres path still lacks live database integration tests.
-- The first current-plan read RPC is implemented against in-memory storage only; Postgres-backed read queries remain deferred.
+- The first current-plan read RPC now has in-memory and Postgres-backed read paths; live database integration tests remain deferred.
 - There are no separate read RPCs yet for workout detail, imported activity status, or adaptation history.
 
 Smallest backend changes before Flutter MVP screens:
@@ -551,8 +551,8 @@ Notes:
 
 - `GetCurrentPlanWeekRequest.plan_week_id` is supported for direct saved-week lookup.
 - `athlete_id`, `goal_id`, and `target_week_date` remain transitional until auth/session context and current-plan lookup exist.
-- The Postgres store still compiles behind the base repository interfaces, but the richer current-plan snapshot query is implemented only by the in-memory store for now.
-- Unit tests cover the app service, handler, and mapper paths with in-memory storage only.
+- The Postgres store compiles behind the base repository interfaces and implements the richer current-plan snapshot query.
+- Unit tests cover the app service, handler, mapper, and Postgres reader paths without requiring a live database.
 
 ## Stage 7: Flutter MVP Screens
 
@@ -583,15 +583,15 @@ Notes:
 - Local in-memory API startup seeds demo `athlete-1` / `goal-1` records so the Flutter MVP can verify backend communication without manual setup.
 - `lib/src/demo` provides a local demo fallback when the backend is unavailable or a non-demo backend is unseeded, and the plan and history tabs show a demo-data notice.
 - Widget tests cover the weekly plan, loading/error states, demo fallback notice, workout detail navigation, disabled completion affordance, imported activity completion state, adaptation summary state, and history navigation states.
-- Garmin connection screens, auth, subscriptions, and AI explanations remain deferred.
+- Auth, subscriptions, and AI explanations remain deferred.
 
 Readiness cleanup notes:
 
 - The Stage 7 mobile surface is ready as an MVP shell for plan viewing, workout detail review, activity/adaptation read state, and demo fallback.
 - It is not beta-ready yet because athlete identity, current-plan lookup, and fallback data are demo-shaped.
 - The Flutter client still uses hand-written Connect JSON instead of generated Dart protobuf/ConnectRPC code.
-- Mobile completion remains read-only; real completion should come from imported Garmin activities matched by the backend.
-- Postgres-backed current-plan reads, auth, provider connection, and production refresh behavior remain deferred.
+- Mobile completion remains read-only; real completion should come from imported provider activities matched by the backend.
+- Auth and production refresh behavior remain deferred. Postgres-backed current-plan reads and provider connection flows exist, but still need beta hardening and live database/provider validation.
 
 Stage 7 handoff:
 

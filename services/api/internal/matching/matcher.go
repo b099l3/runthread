@@ -5,6 +5,8 @@ import (
 	"math"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/runthread/runthread/services/api/internal/domain"
 )
 
@@ -52,8 +54,22 @@ func (m Matcher) MatchActivity(workout domain.PlannedWorkout, activity domain.Im
 		return validateMatch(match)
 	}
 
-	distanceRatio := closenessRatio(workout.TargetDistance.Meters, activity.Distance.Meters)
 	durationRatio := closenessRatio(workout.TargetDuration.Seconds(), activity.Duration.Seconds())
+	if IsRideCrossTrainingMatch(workout.Type, activity.Type) {
+		switch {
+		case dateGap <= 1 && durationRatio >= 0.85:
+			match.Status = domain.WorkoutMatchStatusMatched
+			match.Confidence = domain.MatchConfidenceMedium
+			match.Notes = "Completed by ride cross-training activity."
+		default:
+			match.Status = domain.WorkoutMatchStatusRejected
+			match.Confidence = domain.MatchConfidenceLow
+			match.Notes = "Rejected because ride cross-training did not match the planned workout date and duration."
+		}
+		return validateMatch(match)
+	}
+
+	distanceRatio := closenessRatio(workout.TargetDistance.Meters, activity.Distance.Meters)
 	closeSignals := 0
 	if dateGap == 0 {
 		closeSignals++
@@ -121,9 +137,20 @@ func (m Matcher) now() time.Time {
 func compatibleTypes(workoutType domain.WorkoutType, activityType domain.ActivityType) bool {
 	switch workoutType {
 	case domain.WorkoutTypeEasy, domain.WorkoutTypeLongRun, domain.WorkoutTypeWorkout, domain.WorkoutTypeRecovery:
-		return activityType == domain.ActivityTypeRun || activityType == domain.ActivityTypeTrailRun || activityType == domain.ActivityTypeTreadmill
+		return activityType == domain.ActivityTypeRun || activityType == domain.ActivityTypeTrailRun || activityType == domain.ActivityTypeTreadmill || activityType == domain.ActivityTypeRide
 	case domain.WorkoutTypeRace:
 		return activityType == domain.ActivityTypeRun || activityType == domain.ActivityTypeTrailRun
+	case domain.WorkoutTypeRide:
+		return activityType == domain.ActivityTypeRide
+	default:
+		return false
+	}
+}
+
+func IsRideCrossTrainingMatch(workoutType domain.WorkoutType, activityType domain.ActivityType) bool {
+	switch workoutType {
+	case domain.WorkoutTypeEasy, domain.WorkoutTypeLongRun, domain.WorkoutTypeWorkout, domain.WorkoutTypeRecovery:
+		return activityType == domain.ActivityTypeRide
 	default:
 		return false
 	}
@@ -163,5 +190,5 @@ func validateMatch(match domain.WorkoutMatch) (domain.WorkoutMatch, error) {
 }
 
 func matchID(workoutID string, activityID string) string {
-	return fmt.Sprintf("match-%s-%s", workoutID, activityID)
+	return uuid.NewSHA1(uuid.NameSpaceURL, []byte(fmt.Sprintf("runthread:workout-match:%s:%s", workoutID, activityID))).String()
 }

@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -209,6 +210,32 @@ func (s *InMemoryStore) GetImportedActivity(ctx context.Context, id string) (dom
 	return activity, nil
 }
 
+func (s *InMemoryStore) ListImportedActivitiesByAthlete(ctx context.Context, athleteID string) ([]domain.ImportedActivity, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if athleteID == "" {
+		return nil, fmt.Errorf("athlete id is required")
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var activities []domain.ImportedActivity
+	for _, activity := range s.importedActivities {
+		if activity.AthleteID == athleteID {
+			activities = append(activities, activity)
+		}
+	}
+	sort.SliceStable(activities, func(i, j int) bool {
+		if activities[i].StartedAt.Equal(activities[j].StartedAt) {
+			return activities[i].ID < activities[j].ID
+		}
+		return activities[i].StartedAt.After(activities[j].StartedAt)
+	})
+	return activities, nil
+}
+
 func (s *InMemoryStore) SaveWorkoutMatch(ctx context.Context, match domain.WorkoutMatch) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -235,6 +262,24 @@ func (s *InMemoryStore) GetWorkoutMatch(ctx context.Context, id string) (domain.
 		return domain.WorkoutMatch{}, ErrNotFound
 	}
 	return match, nil
+}
+
+func (s *InMemoryStore) DeleteAutomaticWorkoutMatchesByImportedActivity(ctx context.Context, importedActivityID string, keepMatchID string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if importedActivityID == "" {
+		return fmt.Errorf("imported activity id is required")
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for id, match := range s.workoutMatches {
+		if match.ImportedActivityID == importedActivityID && match.ID != keepMatchID && match.MatchedBy == domain.MatchSourceAutomatic {
+			delete(s.workoutMatches, id)
+		}
+	}
+	return nil
 }
 
 func (s *InMemoryStore) SaveWorkoutResult(ctx context.Context, result domain.WorkoutResult) error {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/runthread/runthread/services/api/internal/adaptation"
 	"github.com/runthread/runthread/services/api/internal/domain"
+	"github.com/runthread/runthread/services/api/internal/matching"
 	"github.com/runthread/runthread/services/api/internal/repository"
 )
 
@@ -69,11 +70,14 @@ func (s ProviderActivityCompletionService) CompleteMatchedProviderActivity(ctx c
 	}
 	resultID := request.ResultID
 	if resultID == "" {
-		resultID = "result-" + match.ID
+		resultID = deterministicUUID("runthread:workout-result", match.ID)
 	}
 	notes := request.Notes
 	if notes == "" {
 		notes = "Created from matched provider activity."
+		if matching.IsRideCrossTrainingMatch(workout.Type, activity.Type) {
+			notes = "Completed by ride cross-training activity."
+		}
 	}
 
 	updatedWorkout, result, err := domain.MarkWorkoutCompleted(workout, domain.WorkoutCompletion{

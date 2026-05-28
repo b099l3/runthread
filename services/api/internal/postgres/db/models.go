@@ -36,7 +36,7 @@ type AthleteProfile struct {
 	DisplayName                 sql.NullString `json:"display_name"`
 	ExperienceLevel             sql.NullString `json:"experience_level"`
 	CurrentWeeklyDistanceMeters float64        `json:"current_weekly_distance_meters"`
-	PreferredRunDays            []int16        `json:"preferred_run_days"`
+	PreferredRunDays            []int64        `json:"preferred_run_days"`
 	Constraints                 []string       `json:"constraints"`
 	CreatedAt                   time.Time      `json:"created_at"`
 	UpdatedAt                   time.Time      `json:"updated_at"`

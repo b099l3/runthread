@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -86,6 +87,52 @@ func TestMatchProviderActivityPersistsRejectedMatch(t *testing.T) {
 
 	if response.WorkoutMatch.Status != domain.WorkoutMatchStatusRejected {
 		t.Fatalf("status = %q, want rejected", response.WorkoutMatch.Status)
+	}
+	assertProviderActivityMatchPersisted(t, ctx, store, response.WorkoutMatch)
+}
+
+func TestMatchProviderActivityDoesNotDefaultRejectedMatchToRestWorkout(t *testing.T) {
+	ctx := context.Background()
+	store := repository.NewInMemoryStore()
+	week := providerActivityMatchWeekWithRestFirst()
+	workout := week.Workouts[1]
+	activity := providerActivityMatchActivity(workout)
+	activity.ID = "imported-rejected-long-run"
+	activity.Distance = domain.Distance{Meters: 20000}
+	activity.Duration = 2 * time.Hour
+	seedProviderActivityMatchRecords(t, ctx, store, week, activity)
+	if err := store.SaveWorkoutMatch(ctx, domain.WorkoutMatch{
+		ID:                 "stale-rest-match",
+		PlannedWorkoutID:   week.Workouts[0].ID,
+		ImportedActivityID: activity.ID,
+		Status:             domain.WorkoutMatchStatusRejected,
+		Confidence:         domain.MatchConfidenceLow,
+		MatchedBy:          domain.MatchSourceAutomatic,
+		MatchedAt:          providerActivityMatchNow().Add(-time.Hour),
+		Notes:              "Rejected because activity type does not match the planned workout.",
+	}); err != nil {
+		t.Fatalf("SaveWorkoutMatch returned error: %v", err)
+	}
+
+	response, err := providerActivityMatchService(store).MatchProviderActivity(ctx, MatchProviderActivityRequest{
+		ImportedActivityID: activity.ID,
+		PlanWeekID:         week.ID,
+	})
+	if err != nil {
+		t.Fatalf("MatchProviderActivity returned error: %v", err)
+	}
+
+	if response.PlannedWorkout.ID != workout.ID {
+		t.Fatalf("planned workout id = %q, want %q", response.PlannedWorkout.ID, workout.ID)
+	}
+	if response.PlannedWorkout.Type == domain.WorkoutTypeRest {
+		t.Fatal("expected rejected match not to default to rest workout")
+	}
+	if response.WorkoutMatch.Status != domain.WorkoutMatchStatusRejected {
+		t.Fatalf("status = %q, want rejected", response.WorkoutMatch.Status)
+	}
+	if _, err := store.GetWorkoutMatch(ctx, "stale-rest-match"); !errors.Is(err, repository.ErrNotFound) {
+		t.Fatalf("expected stale rest match to be pruned, got err %v", err)
 	}
 	assertProviderActivityMatchPersisted(t, ctx, store, response.WorkoutMatch)
 }
@@ -177,6 +224,21 @@ func providerActivityMatchWeek() domain.PlanWeek {
 		Focus:     domain.WeekFocusBase,
 		Workouts:  []domain.PlannedWorkout{workout},
 	}
+}
+
+func providerActivityMatchWeekWithRestFirst() domain.PlanWeek {
+	week := providerActivityMatchWeek()
+	rest := domain.PlannedWorkout{
+		ID:           "workout-provider-match-rest",
+		PlanID:       week.PlanID,
+		PlanWeekID:   week.ID,
+		ScheduledFor: week.Workouts[0].ScheduledFor,
+		Type:         domain.WorkoutTypeRest,
+		Status:       domain.PlannedWorkoutStatusScheduled,
+		Notes:        "Rest day.",
+	}
+	week.Workouts = []domain.PlannedWorkout{rest, week.Workouts[0]}
+	return week
 }
 
 func providerActivityMatchActivity(workout domain.PlannedWorkout) domain.ImportedActivity {

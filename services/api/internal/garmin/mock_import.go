@@ -65,6 +65,8 @@ func normalizeActivityType(garminType string) domain.ActivityType {
 		return domain.ActivityTypeTreadmill
 	case "walking", "walk":
 		return domain.ActivityTypeWalk
+	case "cycling", "cycle", "biking", "bike", "road_biking", "road_cycling", "indoor_cycling", "virtual_ride", "mountain_biking", "mountain_bike", "gravel_cycling", "gravel_biking":
+		return domain.ActivityTypeRide
 	default:
 		return domain.ActivityTypeOther
 	}

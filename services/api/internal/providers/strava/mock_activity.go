@@ -105,6 +105,8 @@ func normaliseSportType(sportType string) (domain.ActivityType, error) {
 		return domain.ActivityTypeTrailRun, nil
 	case "virtualrun", "virtual_run":
 		return domain.ActivityTypeTreadmill, nil
+	case "ride", "virtualride", "virtual_ride", "gravelride", "gravel_ride", "mountainbikeride", "mountain_bike_ride", "mtb":
+		return domain.ActivityTypeRide, nil
 	default:
 		return "", fmt.Errorf("%w: %s", ErrUnsupportedActivityType, sportType)
 	}

@@ -51,6 +51,15 @@ func TestNormalizeMockActivityMapsTrailAndTreadmillRuns(t *testing.T) {
 	}
 }
 
+func TestNormalizeMockActivityMapsRideVariants(t *testing.T) {
+	for _, activityType := range []string{"cycling", "bike", "road_biking", "indoor_cycling", "mountain_biking", "gravel_cycling"} {
+		activity := mustNormalize(t, validPayload(activityType))
+		if activity.Type != domain.ActivityTypeRide {
+			t.Fatalf("activity type %q mapped to %q, want ride", activityType, activity.Type)
+		}
+	}
+}
+
 func TestNormalizeMockActivityMapsUnknownTypeToOther(t *testing.T) {
 	activity := mustNormalize(t, validPayload("indoor_cardio"))
 

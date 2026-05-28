@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"github.com/runthread/runthread/services/api/internal/domain"
+	postgresdb "github.com/runthread/runthread/services/api/internal/postgres/db"
 	"github.com/runthread/runthread/services/api/internal/repository"
 )
 
@@ -19,10 +22,12 @@ type Store struct {
 	WorkoutResults     repository.WorkoutResultRepository
 	AdaptationEvents   repository.AdaptationEventRepository
 	*ProviderStore
+	queries *postgresdb.Queries
 }
 
 var _ repository.Store = (*Store)(nil)
 var _ repository.ProviderStore = (*Store)(nil)
+var _ repository.CurrentPlanWeekReader = (*Store)(nil)
 
 func NewStore(db *sql.DB) (*Store, error) {
 	if db == nil {
@@ -43,6 +48,7 @@ func NewStore(db *sql.DB) (*Store, error) {
 		WorkoutResults:     NewWorkoutResultRepository(db),
 		AdaptationEvents:   NewAdaptationEventRepository(db),
 		ProviderStore:      providerStore,
+		queries:            postgresdb.New(db),
 	}, nil
 }
 
@@ -94,12 +100,42 @@ func (s *Store) GetImportedActivity(ctx context.Context, id string) (domain.Impo
 	return s.ImportedActivities.GetImportedActivity(ctx, id)
 }
 
+func (s *Store) ListImportedActivitiesByAthlete(ctx context.Context, athleteID string) ([]domain.ImportedActivity, error) {
+	return s.ImportedActivities.ListImportedActivitiesByAthlete(ctx, athleteID)
+}
+
 func (s *Store) SaveWorkoutMatch(ctx context.Context, match domain.WorkoutMatch) error {
 	return s.WorkoutMatches.SaveWorkoutMatch(ctx, match)
 }
 
 func (s *Store) GetWorkoutMatch(ctx context.Context, id string) (domain.WorkoutMatch, error) {
 	return s.WorkoutMatches.GetWorkoutMatch(ctx, id)
+}
+
+func (s *Store) DeleteAutomaticWorkoutMatchesByImportedActivity(ctx context.Context, importedActivityID string, keepMatchID string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if s.queries == nil {
+		return fmt.Errorf("postgres queries are required")
+	}
+	parsedImportedActivityID, err := uuid.Parse(importedActivityID)
+	if err != nil {
+		return fmt.Errorf("parse imported activity id: %w", err)
+	}
+	rows, err := s.queries.ListWorkoutMatchesByImportedActivity(ctx, parsedImportedActivityID)
+	if err != nil {
+		return fmt.Errorf("list workout matches by imported activity: %w", err)
+	}
+	for _, row := range rows {
+		if row.ID.String() == keepMatchID || row.MatchedBy != string(domain.MatchSourceAutomatic) {
+			continue
+		}
+		if err := s.queries.DeleteWorkoutMatch(ctx, row.ID); err != nil {
+			return fmt.Errorf("delete stale workout match %q: %w", row.ID.String(), err)
+		}
+	}
+	return nil
 }
 
 func (s *Store) SaveWorkoutResult(ctx context.Context, result domain.WorkoutResult) error {

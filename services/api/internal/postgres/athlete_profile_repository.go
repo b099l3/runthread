@@ -90,7 +90,7 @@ func athleteProfileToCreateParams(profile domain.AthleteProfile) (postgresdb.Cre
 		DisplayName:                 nullableString(profile.DisplayName),
 		ExperienceLevel:             nullableString(string(profile.ExperienceLevel)),
 		CurrentWeeklyDistanceMeters: profile.CurrentWeeklyDistance.Meters,
-		PreferredRunDays:            weekdaysToInt16(profile.PreferredRunDays),
+		PreferredRunDays:            weekdaysToInt64(profile.PreferredRunDays),
 		Constraints:                 append([]string(nil), profile.Constraints...),
 	}, nil
 }
@@ -106,7 +106,7 @@ func athleteProfileToUpdateParams(profile domain.AthleteProfile) (postgresdb.Upd
 		DisplayName:                 nullableString(profile.DisplayName),
 		ExperienceLevel:             nullableString(string(profile.ExperienceLevel)),
 		CurrentWeeklyDistanceMeters: profile.CurrentWeeklyDistance.Meters,
-		PreferredRunDays:            weekdaysToInt16(profile.PreferredRunDays),
+		PreferredRunDays:            weekdaysToInt64(profile.PreferredRunDays),
 		Constraints:                 append([]string(nil), profile.Constraints...),
 	}, nil
 }
@@ -117,7 +117,7 @@ func athleteProfileFromDB(row postgresdb.AthleteProfile) (domain.AthleteProfile,
 		DisplayName:           stringFromNull(row.DisplayName),
 		ExperienceLevel:       domain.ExperienceLevel(stringFromNull(row.ExperienceLevel)),
 		CurrentWeeklyDistance: domain.Distance{Meters: row.CurrentWeeklyDistanceMeters},
-		PreferredRunDays:      int16ToWeekdays(row.PreferredRunDays),
+		PreferredRunDays:      int64ToWeekdays(row.PreferredRunDays),
 		Constraints:           append([]string(nil), row.Constraints...),
 	}, nil
 }
@@ -136,19 +136,19 @@ func stringFromNull(value sql.NullString) string {
 	return value.String
 }
 
-func weekdaysToInt16(days []time.Weekday) []int16 {
+func weekdaysToInt64(days []time.Weekday) []int64 {
 	if len(days) == 0 {
 		return nil
 	}
 
-	out := make([]int16, len(days))
+	out := make([]int64, len(days))
 	for i, day := range days {
-		out[i] = int16(day)
+		out[i] = int64(day)
 	}
 	return out
 }
 
-func int16ToWeekdays(days []int16) []time.Weekday {
+func int64ToWeekdays(days []int64) []time.Weekday {
 	if len(days) == 0 {
 		return nil
 	}

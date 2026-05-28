@@ -195,11 +195,15 @@ func (s BackfillService) importActivity(ctx context.Context, connection reposito
 		}
 		return result, false, false, err
 	}
-	activity.ID = providerimport.DeterministicID("runthread:imported-activity", connection.ID, payload.ActivityID)
+	activity.ID = stravaImportedActivityID(payload.ActivityID)
 	importRequest.ImportedActivity = &activity
 
 	result, err := s.Importer.ImportActivity(ctx, importRequest)
 	return result, err == nil, false, err
+}
+
+func stravaImportedActivityID(activityID string) string {
+	return providerimport.DeterministicID("runthread:imported-activity", ProviderName, activityID)
 }
 
 func (s BackfillService) deferBackfill(ctx context.Context, connection repository.ProviderConnection, cause error) (BackfillResult, error) {

@@ -13,7 +13,7 @@ The purpose of the Strava integration is to validate the activity import loop qu
 7. Backend matches imported activities to planned workouts.
 8. Workout results drive deterministic adaptation.
 
-No full Strava OAuth, token storage, webhook handling, or real Strava API calls should be implemented until the mock provider path is documented and tested.
+The mock provider path is documented and tested. Strava OAuth start/callback, token storage, token refresh, webhook handling, backfill, and HTTP activity fetch boundaries now exist behind backend-owned provider packages. Remaining work should focus on live provider validation, production hardening, operational observability, and privacy/support behavior.
 
 ## Backend Responsibilities
 
@@ -50,13 +50,13 @@ Strava activity data should only be shown to the authorised Runthread user who c
 
 ## MVP Scope
 
-First production-facing stages should add Strava in this order:
+Production-facing Strava work is staged as:
 
-1. Mock Strava provider payloads and normalisation.
-2. OAuth start/callback and secure token reference storage.
-3. Backfill/import jobs for recent activities.
-4. Webhook subscription and event handling.
-5. Matching imported activities to planned workouts.
-6. Adaptation from matched workout results.
+1. Mock Strava provider payloads and normalisation. Done.
+2. OAuth start/callback and secure token reference storage. Implemented; needs production hardening.
+3. Backfill/import jobs for recent activities. Implemented behind provider-neutral import services; needs live validation.
+4. Webhook subscription and event handling. Implemented behind backend routes/services; needs live validation and operations coverage.
+5. Matching imported activities to planned workouts. Implemented through provider-neutral matching paths.
+6. Adaptation from matched workout results. Implemented through deterministic adaptation paths.
 
-Real API calls and OAuth should wait until the mock provider path has clear tests and the provider-neutral boundaries are stable.
+Before beta, validate the live Strava app configuration, rate-limit behavior, webhook delivery, token key management, revoked-access transitions, and support/debugging surfaces.

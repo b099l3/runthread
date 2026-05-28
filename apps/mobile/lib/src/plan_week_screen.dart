@@ -1,29 +1,74 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'api/runthread_api.dart';
 import 'demo/demo_fallback_api.dart';
+import 'deep_links.dart';
+import 'models/distance_unit.dart';
 import 'history_view.dart';
 import 'models/plan_week.dart';
-import 'models/provider_connection.dart';
+import 'settings_screen.dart';
+import 'week_dates.dart';
 import 'workout_detail_screen.dart';
 
 class PlanWeekScreen extends StatefulWidget {
-  const PlanWeekScreen({required this.api, super.key});
+  const PlanWeekScreen({
+    required this.api,
+    required this.openUrl,
+    required this.distanceUnit,
+    required this.onDistanceUnitChanged,
+    this.deepLinks,
+    super.key,
+  });
 
   final RunthreadApi api;
+  final UrlOpener openUrl;
+  final DistanceUnit distanceUnit;
+  final ValueChanged<DistanceUnit> onDistanceUnitChanged;
+  final Stream<Uri>? deepLinks;
 
   @override
   State<PlanWeekScreen> createState() => _PlanWeekScreenState();
 }
 
-class _PlanWeekScreenState extends State<PlanWeekScreen> {
+class _PlanWeekScreenState extends State<PlanWeekScreen>
+    with WidgetsBindingObserver {
   late Future<_PlanWeekScreenData> _screenData;
   int _selectedIndex = 0;
+  late DateTime _selectedWeekStart;
+  StreamSubscription<Uri>? _deepLinkSubscription;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _selectedWeekStart = currentWeekStart();
     _screenData = _loadScreenData();
+    _deepLinkSubscription = widget.deepLinks?.listen(_handleDeepLink);
+  }
+
+  @override
+  void didUpdateWidget(covariant PlanWeekScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.deepLinks != oldWidget.deepLinks) {
+      _deepLinkSubscription?.cancel();
+      _deepLinkSubscription = widget.deepLinks?.listen(_handleDeepLink);
+    }
+  }
+
+  @override
+  void dispose() {
+    _deepLinkSubscription?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _reload();
+    }
   }
 
   void _reload() {
@@ -32,19 +77,35 @@ class _PlanWeekScreenState extends State<PlanWeekScreen> {
     });
   }
 
+  void _handleDeepLink(Uri uri) {
+    if (!mounted || !isStravaConnectionDeepLink(uri)) {
+      return;
+    }
+    _selectedIndex = 0;
+    _reload();
+  }
+
   Future<_PlanWeekScreenData> _loadScreenData() async {
-    final currentPlanWeek = await widget.api.getCurrentPlanWeek();
-    final providerConnection = await widget.api
-        .getProviderConnectionStatus()
-        .catchError(
-          (_) => ProviderConnectionStatusView.notConnected(
-            statusUnavailable: true,
-          ),
-        );
-    return _PlanWeekScreenData(
-      currentPlanWeek: currentPlanWeek,
-      providerConnection: providerConnection,
+    final currentPlanWeek = await widget.api.getCurrentPlanWeek(
+      targetWeekDate: _selectedWeekStart,
     );
+    return _PlanWeekScreenData(currentPlanWeek: currentPlanWeek);
+  }
+
+  void _changeWeek(int weekOffset) {
+    setState(() {
+      _selectedWeekStart = _selectedWeekStart.add(
+        Duration(days: weekOffset * 7),
+      );
+      _screenData = _loadScreenData();
+    });
+  }
+
+  void _goToCurrentWeek() {
+    setState(() {
+      _selectedWeekStart = currentWeekStart();
+      _screenData = _loadScreenData();
+    });
   }
 
   @override
@@ -57,6 +118,23 @@ class _PlanWeekScreenState extends State<PlanWeekScreen> {
             tooltip: 'Refresh plan',
             onPressed: _reload,
             icon: const Icon(Icons.refresh),
+          ),
+          IconButton(
+            tooltip: 'Settings',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => SettingsScreen(
+                    api: widget.api,
+                    openUrl: widget.openUrl,
+                    deepLinks: widget.deepLinks,
+                    distanceUnit: widget.distanceUnit,
+                    onDistanceUnitChanged: widget.onDistanceUnitChanged,
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.settings_outlined),
           ),
         ],
       ),
@@ -101,8 +179,17 @@ class _PlanWeekScreenState extends State<PlanWeekScreen> {
               );
             }
             return _selectedIndex == 0
-                ? _PlanWeekContent(screenData: screenData)
-                : HistoryView(currentPlanWeek: screenData.currentPlanWeek);
+                ? _PlanWeekContent(
+                    screenData: screenData,
+                    onPreviousWeek: () => _changeWeek(-1),
+                    onNextWeek: () => _changeWeek(1),
+                    onCurrentWeek: _goToCurrentWeek,
+                    distanceUnit: widget.distanceUnit,
+                  )
+                : HistoryView(
+                    currentPlanWeek: screenData.currentPlanWeek,
+                    distanceUnit: widget.distanceUnit,
+                  );
           },
         ),
       ),
@@ -111,19 +198,25 @@ class _PlanWeekScreenState extends State<PlanWeekScreen> {
 }
 
 class _PlanWeekScreenData {
-  const _PlanWeekScreenData({
-    required this.currentPlanWeek,
-    required this.providerConnection,
-  });
+  const _PlanWeekScreenData({required this.currentPlanWeek});
 
   final CurrentPlanWeek currentPlanWeek;
-  final ProviderConnectionStatusView providerConnection;
 }
 
 class _PlanWeekContent extends StatelessWidget {
-  const _PlanWeekContent({required this.screenData});
+  const _PlanWeekContent({
+    required this.screenData,
+    required this.onPreviousWeek,
+    required this.onNextWeek,
+    required this.onCurrentWeek,
+    required this.distanceUnit,
+  });
 
   final _PlanWeekScreenData screenData;
+  final VoidCallback onPreviousWeek;
+  final VoidCallback onNextWeek;
+  final VoidCallback onCurrentWeek;
+  final DistanceUnit distanceUnit;
 
   @override
   Widget build(BuildContext context) {
@@ -140,6 +233,13 @@ class _PlanWeekContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
+        _WeekSelector(
+          startsOn: planWeek.startsOn,
+          onPreviousWeek: onPreviousWeek,
+          onNextWeek: onNextWeek,
+          onCurrentWeek: onCurrentWeek,
+        ),
+        const SizedBox(height: 10),
         Text(
           'Starts ${_formatDate(planWeek.startsOn)} · ${planWeek.focus} focus',
           style: textTheme.bodyMedium?.copyWith(
@@ -151,22 +251,24 @@ class _PlanWeekContent extends StatelessWidget {
           const _DemoNotice(),
         ],
         const SizedBox(height: 16),
-        _ProviderConnectionSummary(
-          providerConnection: screenData.providerConnection,
-        ),
-        const SizedBox(height: 12),
         _AdaptationSummary(events: currentPlanWeek.adaptationEvents),
         const SizedBox(height: 20),
         for (final workout in planWeek.workouts) ...[
           _WorkoutTile(
             workout: workout,
             completion: currentPlanWeek.completionFor(workout),
+            activities: _activitiesForDay(
+              currentPlanWeek.importedActivities,
+              workout.scheduledFor,
+            ),
+            distanceUnit: distanceUnit,
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (_) => WorkoutDetailScreen(
                     workout: workout,
                     completion: currentPlanWeek.completionFor(workout),
+                    distanceUnit: distanceUnit,
                   ),
                 ),
               );
@@ -179,87 +281,103 @@ class _PlanWeekContent extends StatelessWidget {
   }
 }
 
-class _ProviderConnectionSummary extends StatelessWidget {
-  const _ProviderConnectionSummary({required this.providerConnection});
+class _WeekSelector extends StatelessWidget {
+  const _WeekSelector({
+    required this.startsOn,
+    required this.onPreviousWeek,
+    required this.onNextWeek,
+    required this.onCurrentWeek,
+  });
 
-  final ProviderConnectionStatusView providerConnection;
+  final DateTime startsOn;
+  final VoidCallback onPreviousWeek;
+  final VoidCallback onNextWeek;
+  final VoidCallback onCurrentWeek;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        IconButton.filledTonal(
+          tooltip: 'Previous week',
+          onPressed: onPreviousWeek,
+          icon: const Icon(Icons.chevron_left),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            compactWeekRange(startsOn),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        IconButton.filledTonal(
+          tooltip: 'Next week',
+          onPressed: onNextWeek,
+          icon: const Icon(Icons.chevron_right),
+        ),
+        const SizedBox(width: 8),
+        TextButton(onPressed: onCurrentWeek, child: const Text('Today')),
+      ],
+    );
+  }
+}
+
+class _ImportedActivityRow extends StatelessWidget {
+  const _ImportedActivityRow({
+    required this.activity,
+    required this.distanceUnit,
+  });
+
+  final ImportedActivity activity;
+  final DistanceUnit distanceUnit;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.watch_outlined,
-                  size: 20,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    providerConnection.providerLabel,
-                    style: textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: colorScheme.surfaceContainerHighest,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    child: Text(
-                      providerConnection.statusLabel,
-                      style: textTheme.labelMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              providerConnection.description,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                OutlinedButton.icon(
-                  onPressed: null,
-                  icon: const Icon(Icons.link),
-                  label: Text('Connect ${providerConnection.providerLabel}'),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Disabled for now',
-                    style: textTheme.labelMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+    final distanceLabel = activity.distanceLabel(distanceUnit);
+    final details = [
+      if (distanceLabel.isNotEmpty) distanceLabel,
+      if (activity.durationLabel.isNotEmpty) activity.durationLabel,
+    ];
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          _iconForActivity(activity.type),
+          size: 18,
+          color: colorScheme.onSurfaceVariant,
         ),
-      ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                activity.type.isEmpty ? 'Imported activity' : activity.type,
+                style: textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (details.isNotEmpty) ...[
+                const SizedBox(height: 3),
+                Text(
+                  details.join(' · '),
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -408,19 +526,24 @@ class _WorkoutTile extends StatelessWidget {
   const _WorkoutTile({
     required this.workout,
     required this.completion,
+    required this.activities,
+    required this.distanceUnit,
     required this.onTap,
   });
 
   final PlannedWorkout workout;
   final WorkoutCompletionState completion;
+  final List<ImportedActivity> activities;
+  final DistanceUnit distanceUnit;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
+    final distanceLabel = workout.distanceLabel(distanceUnit);
     final details = [
-      if (workout.distanceLabel.isNotEmpty) workout.distanceLabel,
+      if (distanceLabel.isNotEmpty) distanceLabel,
       if (workout.durationLabel.isNotEmpty) workout.durationLabel,
       if (workout.intensity.kind.isNotEmpty) workout.intensity.kind,
     ];
@@ -504,7 +627,21 @@ class _WorkoutTile extends StatelessWidget {
                       ),
                     ],
                     const SizedBox(height: 8),
-                    _CompletionSummary(completion: completion),
+                    _CompletionSummary(
+                      completion: completion,
+                      hasDayActivity: activities.isNotEmpty,
+                    ),
+                    if (activities.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      for (final activity in activities) ...[
+                        _ImportedActivityRow(
+                          activity: activity,
+                          distanceUnit: distanceUnit,
+                        ),
+                        if (activity != activities.last)
+                          const SizedBox(height: 8),
+                      ],
+                    ],
                   ],
                 ),
               ),
@@ -517,9 +654,13 @@ class _WorkoutTile extends StatelessWidget {
 }
 
 class _CompletionSummary extends StatelessWidget {
-  const _CompletionSummary({required this.completion});
+  const _CompletionSummary({
+    required this.completion,
+    required this.hasDayActivity,
+  });
 
   final WorkoutCompletionState completion;
+  final bool hasDayActivity;
 
   @override
   Widget build(BuildContext context) {
@@ -529,16 +670,19 @@ class _CompletionSummary extends StatelessWidget {
         ? 'Completed · ${completion.workoutResult!.outcome}'
         : hasActivity
         ? 'Activity imported'
+        : hasDayActivity
+        ? 'Imported activity on this day'
         : 'No imported activity';
+    final hasVisibleActivity = hasActivity || hasDayActivity;
 
     return Row(
       children: [
         Icon(
-          hasActivity
+          hasVisibleActivity
               ? Icons.check_circle_outline
               : Icons.radio_button_unchecked,
           size: 16,
-          color: hasActivity
+          color: hasVisibleActivity
               ? colorScheme.primary
               : colorScheme.onSurfaceVariant,
         ),
@@ -547,7 +691,7 @@ class _CompletionSummary extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: hasActivity
+              color: hasVisibleActivity
                   ? colorScheme.primary
                   : colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w700,
@@ -623,11 +767,59 @@ IconData _iconForWorkout(String type) {
       return Icons.hotel;
     case 'strength':
       return Icons.fitness_center;
+    case 'ride':
+      return Icons.directions_bike;
     case 'long':
       return Icons.route;
     default:
       return Icons.directions_run;
   }
+}
+
+IconData _iconForActivity(String type) {
+  switch (type.toLowerCase()) {
+    case 'walk':
+      return Icons.directions_walk;
+    case 'ride':
+    case 'virtualride':
+      return Icons.directions_bike;
+    default:
+      return Icons.directions_run;
+  }
+}
+
+List<ImportedActivity> _activitiesForDay(
+  List<ImportedActivity> activities,
+  DateTime day,
+) {
+  final targetDay = DateTime(day.year, day.month, day.day);
+  final dayActivities = activities.where((activity) {
+    final startedAt = activity.startedAt;
+    if (startedAt == null) {
+      return false;
+    }
+    final startedDate = DateTime(
+      startedAt.year,
+      startedAt.month,
+      startedAt.day,
+    );
+    return startedDate == targetDay;
+  }).toList();
+  dayActivities.sort((a, b) {
+    final left = a.startedAt;
+    final right = b.startedAt;
+    if (left == null && right == null) {
+      return 0;
+    }
+    if (left == null) {
+      return 1;
+    }
+    if (right == null) {
+      return -1;
+    }
+    return left.compareTo(right);
+  });
+  return dayActivities;
 }
 
 String _weekday(DateTime date) {

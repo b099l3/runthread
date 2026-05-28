@@ -305,6 +305,7 @@ const (
 	WorkoutType_WORKOUT_TYPE_RACE        WorkoutType = 5
 	WorkoutType_WORKOUT_TYPE_REST        WorkoutType = 6
 	WorkoutType_WORKOUT_TYPE_STRENGTH    WorkoutType = 7
+	WorkoutType_WORKOUT_TYPE_RIDE        WorkoutType = 8
 )
 
 // Enum value maps for WorkoutType.
@@ -318,6 +319,7 @@ var (
 		5: "WORKOUT_TYPE_RACE",
 		6: "WORKOUT_TYPE_REST",
 		7: "WORKOUT_TYPE_STRENGTH",
+		8: "WORKOUT_TYPE_RIDE",
 	}
 	WorkoutType_value = map[string]int32{
 		"WORKOUT_TYPE_UNSPECIFIED": 0,
@@ -328,6 +330,7 @@ var (
 		"WORKOUT_TYPE_RACE":        5,
 		"WORKOUT_TYPE_REST":        6,
 		"WORKOUT_TYPE_STRENGTH":    7,
+		"WORKOUT_TYPE_RIDE":        8,
 	}
 )
 
@@ -425,6 +428,7 @@ const (
 	ActivityType_ACTIVITY_TYPE_TREADMILL   ActivityType = 3
 	ActivityType_ACTIVITY_TYPE_WALK        ActivityType = 4
 	ActivityType_ACTIVITY_TYPE_OTHER       ActivityType = 5
+	ActivityType_ACTIVITY_TYPE_RIDE        ActivityType = 6
 )
 
 // Enum value maps for ActivityType.
@@ -436,6 +440,7 @@ var (
 		3: "ACTIVITY_TYPE_TREADMILL",
 		4: "ACTIVITY_TYPE_WALK",
 		5: "ACTIVITY_TYPE_OTHER",
+		6: "ACTIVITY_TYPE_RIDE",
 	}
 	ActivityType_value = map[string]int32{
 		"ACTIVITY_TYPE_UNSPECIFIED": 0,
@@ -444,6 +449,7 @@ var (
 		"ACTIVITY_TYPE_TREADMILL":   3,
 		"ACTIVITY_TYPE_WALK":        4,
 		"ACTIVITY_TYPE_OTHER":       5,
+		"ACTIVITY_TYPE_RIDE":        6,
 	}
 )
 
@@ -2673,7 +2679,7 @@ const file_runthread_v1_runthread_proto_rawDesc = "" +
 	"\x10WEEK_FOCUS_BUILD\x10\x02\x12\x17\n" +
 	"\x13WEEK_FOCUS_RECOVERY\x10\x03\x12\x13\n" +
 	"\x0fWEEK_FOCUS_PEAK\x10\x04\x12\x14\n" +
-	"\x10WEEK_FOCUS_TAPER\x10\x05*\xdb\x01\n" +
+	"\x10WEEK_FOCUS_TAPER\x10\x05*\xf2\x01\n" +
 	"\vWorkoutType\x12\x1c\n" +
 	"\x18WORKOUT_TYPE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11WORKOUT_TYPE_EASY\x10\x01\x12\x19\n" +
@@ -2682,21 +2688,23 @@ const file_runthread_v1_runthread_proto_rawDesc = "" +
 	"\x15WORKOUT_TYPE_RECOVERY\x10\x04\x12\x15\n" +
 	"\x11WORKOUT_TYPE_RACE\x10\x05\x12\x15\n" +
 	"\x11WORKOUT_TYPE_REST\x10\x06\x12\x19\n" +
-	"\x15WORKOUT_TYPE_STRENGTH\x10\a*\xf3\x01\n" +
+	"\x15WORKOUT_TYPE_STRENGTH\x10\a\x12\x15\n" +
+	"\x11WORKOUT_TYPE_RIDE\x10\b*\xf3\x01\n" +
 	"\x14PlannedWorkoutStatus\x12&\n" +
 	"\"PLANNED_WORKOUT_STATUS_UNSPECIFIED\x10\x00\x12$\n" +
 	" PLANNED_WORKOUT_STATUS_SCHEDULED\x10\x01\x12$\n" +
 	" PLANNED_WORKOUT_STATUS_COMPLETED\x10\x02\x12!\n" +
 	"\x1dPLANNED_WORKOUT_STATUS_MISSED\x10\x03\x12\"\n" +
 	"\x1ePLANNED_WORKOUT_STATUS_SKIPPED\x10\x04\x12 \n" +
-	"\x1cPLANNED_WORKOUT_STATUS_MOVED\x10\x05*\xaf\x01\n" +
+	"\x1cPLANNED_WORKOUT_STATUS_MOVED\x10\x05*\xc7\x01\n" +
 	"\fActivityType\x12\x1d\n" +
 	"\x19ACTIVITY_TYPE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11ACTIVITY_TYPE_RUN\x10\x01\x12\x1b\n" +
 	"\x17ACTIVITY_TYPE_TRAIL_RUN\x10\x02\x12\x1b\n" +
 	"\x17ACTIVITY_TYPE_TREADMILL\x10\x03\x12\x16\n" +
 	"\x12ACTIVITY_TYPE_WALK\x10\x04\x12\x17\n" +
-	"\x13ACTIVITY_TYPE_OTHER\x10\x05*\xa3\x01\n" +
+	"\x13ACTIVITY_TYPE_OTHER\x10\x05\x12\x16\n" +
+	"\x12ACTIVITY_TYPE_RIDE\x10\x06*\xa3\x01\n" +
 	"\x12WorkoutMatchStatus\x12$\n" +
 	" WORKOUT_MATCH_STATUS_UNSPECIFIED\x10\x00\x12 \n" +
 	"\x1cWORKOUT_MATCH_STATUS_MATCHED\x10\x01\x12\"\n" +

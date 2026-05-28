@@ -1,3 +1,5 @@
+import 'distance_unit.dart';
+
 class CurrentPlanWeek {
   const CurrentPlanWeek({
     required this.planWeek,
@@ -163,15 +165,22 @@ class ImportedActivity {
     );
   }
 
-  String get distanceLabel {
+  String distanceLabel(DistanceUnit unit) {
     if (distanceMeters <= 0) {
       return '';
     }
-    final kilometers = distanceMeters / 1000;
-    return '${kilometers.toStringAsFixed(kilometers >= 10 ? 0 : 1)} km';
+    return distanceLabelFromMeters(distanceMeters, unit);
   }
 
   String get durationLabel => _durationLabel(durationSeconds);
+
+  String get startedDateLabel {
+    final value = startedAt;
+    if (value == null) {
+      return '';
+    }
+    return '${_weekdayLabel(value.weekday)}, ${_monthLabel(value.month)} ${value.day}';
+  }
 }
 
 class WorkoutMatch {
@@ -284,12 +293,11 @@ class PlannedWorkout {
 
   bool get isRun => targetDistanceMeters > 0;
 
-  String get distanceLabel {
+  String distanceLabel(DistanceUnit unit) {
     if (!isRun) {
       return '';
     }
-    final kilometers = targetDistanceMeters / 1000;
-    return '${kilometers.toStringAsFixed(kilometers >= 10 ? 0 : 1)} km';
+    return distanceLabelFromMeters(targetDistanceMeters, unit);
   }
 
   String get durationLabel {
@@ -398,6 +406,35 @@ String _durationLabel(int seconds) {
   final hours = minutes ~/ 60;
   final remainder = minutes % 60;
   return remainder == 0 ? '${hours}h' : '${hours}h ${remainder}m';
+}
+
+String _weekdayLabel(int weekday) {
+  const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  if (weekday < 1 || weekday > weekdays.length) {
+    return '';
+  }
+  return weekdays[weekday - 1];
+}
+
+String _monthLabel(int month) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  if (month < 1 || month > months.length) {
+    return '';
+  }
+  return months[month - 1];
 }
 
 T? _firstWhereOrNull<T>(Iterable<T> values, bool Function(T) test) {

@@ -9,7 +9,7 @@ The MVP also includes:
 - Workout detail view.
 - Recent activity and adaptation history tab.
 - Demo fallback when the local backend is unavailable or unseeded.
-- Disabled completion affordance that explains real completion will come from imported Garmin activity later.
+- Disabled completion affordance that explains real completion will come from imported provider activity later.
 
 ## Local Development
 
@@ -33,11 +33,26 @@ cd apps/mobile
 asdf exec flutter run
 ```
 
-The app defaults to `http://localhost:8080`. Override the backend URL with:
+The default entrypoint uses local defaults, including `http://localhost:8080`.
+For emulator and physical-device development, create mobile-only env files from
+the tracked examples:
 
 ```sh
-asdf exec flutter run --dart-define=RUNTHREAD_API_BASE_URL=http://localhost:8080
+cp env/mobile.emulator.env.example env/mobile.emulator.env
+cp env/mobile.physical.env.example env/mobile.physical.env
 ```
+
+Then run the target-specific entrypoint:
+
+```sh
+asdf exec flutter run -t lib/main_emulator.dart
+asdf exec flutter run -t lib/main_physical.dart
+```
+
+The mobile env files are bundled into debug app builds. Keep them limited to
+public client configuration such as API URLs, demo athlete IDs, demo goal IDs,
+and OAuth redirect URIs. Do not put backend secrets such as `DATABASE_URL`,
+Strava client secret, webhook tokens, or encryption keys in `apps/mobile/env`.
 
 ## Demo Bootstrap
 

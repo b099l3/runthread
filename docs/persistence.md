@@ -447,7 +447,7 @@ Initial sqlc query files exist for provider persistence tables:
 - `provider_activity_payloads.sql`
 - `provider_import_events.sql`
 
-The queries intentionally cover only small read/write operations needed for future repositories: create, update where useful, get by ID, and list by athlete/status/connection. sqlc-backed provider repositories and a provider-only Postgres store composition layer now exist in `services/api/internal/postgres`, with tests that do not require a live database. Provider app-service and server-startup wiring remain deferred.
+The queries intentionally cover small read/write operations needed by current repositories: create, update where useful, get by ID, and list by athlete/status/connection. sqlc-backed provider repositories and Postgres store composition now exist in `services/api/internal/postgres`, with tests that do not require a live database. Server startup composes the Postgres store when `DATABASE_URL` is set, and Strava provider services use those provider repositories when Strava is configured.
 
 Provider persistence models and repository interfaces live in `services/api/internal/repository`, not in the core domain package. The in-memory store implements those interfaces for tests and early integration design. This keeps provider connection state outside `domain.ImportedActivity` and the core training logic.
 
@@ -533,7 +533,7 @@ The first hand-written Postgres repositories live in:
 
 They map between domain types and generated sqlc types while satisfying repository interfaces for athlete profiles, training goals, plan weeks, planned workouts, imported activities, workout matches, workout results, and adaptation events.
 
-`services/api/internal/postgres/store.go` composes those repositories into a `repository.Store` from a `*sql.DB`. This allows later app-service construction to choose either `repository.NewInMemoryStore()` or `postgres.NewStore(...)` without changing application service methods.
+`services/api/internal/postgres/store.go` composes those repositories into a `repository.Store` from a `*sql.DB`. App-service construction can choose either `repository.NewInMemoryStore()` or `postgres.NewStore(...)` without changing application service methods.
 
 `CoreLoopService.CompleteImportedActivity` now saves both the generated `PlanWeek` and each `PlannedWorkout` through the repository boundary. This matches the Postgres shape where `plan_weeks` and `planned_workouts` are separate tables.
 
@@ -546,7 +546,7 @@ Current repository shape notes:
 - `PlanWeek` rows require `athlete_id` and optional `goal_id`; `domain.PlanWeek` now carries those fields directly.
 - `postgres.Store` no longer needs plan-week owner options. It can compose repositories from only a `*sql.DB`.
 - The `DATABASE_URL` startup path still needs live database integration tests later.
-- `PlanWeek` and `PlannedWorkout` are stored separately in Postgres. `GetPlanWeek` returns the week row only; loading workouts for a week should be added as an explicit read model or service method later.
+- `PlanWeek` and `PlannedWorkout` are stored separately in Postgres. `GetPlanWeek` returns the week row only; the current-plan snapshot reader handles the richer mobile read path by loading workouts and nearby completion/adaptation state explicitly.
 - `AdaptationEventRepository.SaveAdaptationEvent` writes the event and replaces its child changes in one transaction.
 - `PlanChange` does not currently carry its own ID, so Postgres adaptation-event-change IDs are generated in the repository layer.
 

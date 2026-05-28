@@ -84,8 +84,8 @@ Mobile readiness:
 
 Backend readiness:
 
-- Wire provider persistence and token storage into startup for the selected production database path.
-- Add Postgres-backed current-plan read behavior or a clearly supported beta read model.
+- Validate provider persistence and token storage startup wiring for the selected production database path.
+- Exercise the Postgres-backed current-plan read behavior against a repeatable beta database workflow.
 - Add live database integration tests before depending on Postgres in beta.
 - Keep provider import, matching, workout result, and adaptation services provider-neutral.
 - Run backend checks before beta builds: `asdf exec go test ./...`.
@@ -93,8 +93,8 @@ Backend readiness:
 ## Beta Launch Blockers
 
 - Production auth/current athlete identity is not implemented.
-- Real Strava OAuth, token refresh, webhook endpoint exposure, and live API fetches are not implemented.
-- Provider token storage policy and implementation are not production-ready.
+- Strava OAuth, token refresh, webhook endpoint exposure, and live fetch paths exist, but need production hardening and live provider validation.
+- Provider token storage implementation exists, but production key management and operational policy are not final.
 - Data deletion/export and retention behavior are not implemented.
 - Subscriptions and entitlements are undecided.
 - Monitoring, support diagnostics, and operational runbooks are not in place.
@@ -105,7 +105,7 @@ Backend readiness:
 1. Verify current backend and mobile automated checks.
 2. Decide beta auth/current-athlete approach.
 3. Decide beta entitlement/subscription model without adding payment calls.
-4. Implement production-ready Strava OAuth/token storage behind backend-only boundaries.
-5. Wire Strava backfill and webhook imports to provider-neutral import services.
+4. Harden Strava OAuth/token storage behind backend-only boundaries for beta operations.
+5. Validate Strava backfill and webhook imports through provider-neutral import services with live provider data.
 6. Add manual review/status handling for uncertain workout matches.
 7. Add privacy, deletion, export, monitoring, and support surfaces before inviting real users.

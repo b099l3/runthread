@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/runthread/runthread/services/api/internal/domain"
 	"github.com/runthread/runthread/services/api/internal/repository"
 )
@@ -62,10 +64,19 @@ func TestGetCurrentPlanWeekGeneratesAndSavesWeekWhenMissing(t *testing.T) {
 	if len(response.PlanWeek.Workouts) != 7 {
 		t.Fatalf("generated workouts = %d, want 7", len(response.PlanWeek.Workouts))
 	}
+	if _, err := uuid.Parse(response.PlanWeek.ID); err != nil {
+		t.Fatalf("generated plan week id = %q, want UUID: %v", response.PlanWeek.ID, err)
+	}
+	if _, err := uuid.Parse(response.PlanWeek.PlanID); err != nil {
+		t.Fatalf("generated plan id = %q, want UUID: %v", response.PlanWeek.PlanID, err)
+	}
 	if _, err := store.GetPlanWeek(ctx, response.PlanWeek.ID); err != nil {
 		t.Fatalf("expected generated week to be saved: %v", err)
 	}
 	for _, workout := range response.PlanWeek.Workouts {
+		if _, err := uuid.Parse(workout.ID); err != nil {
+			t.Fatalf("generated workout id = %q, want UUID: %v", workout.ID, err)
+		}
 		if _, err := store.GetPlannedWorkout(ctx, workout.ID); err != nil {
 			t.Fatalf("expected generated workout %q to be saved: %v", workout.ID, err)
 		}
@@ -140,6 +151,58 @@ func TestGetCurrentPlanWeekIncludesInMemoryCompletionState(t *testing.T) {
 	}
 	if len(response.WorkoutResults) != 1 {
 		t.Fatalf("WorkoutResults = %d, want 1", len(response.WorkoutResults))
+	}
+}
+
+func TestGetCurrentPlanWeekReturnsLatestWorkoutMatchPerImportedActivity(t *testing.T) {
+	ctx := context.Background()
+	store := repository.NewInMemoryStore()
+	profile := beginnerProfile()
+	goal := halfMarathonGoal(profile.ID)
+	week := savedPlanWeek(profile.ID, goal.ID, date(2026, time.June, 1))
+	activity := importedActivityForWorkout(profile.ID, week.Workouts[0])
+
+	saveProfileGoalWeek(t, ctx, store, profile, goal, week)
+	if err := store.SaveImportedActivity(ctx, activity); err != nil {
+		t.Fatalf("SaveImportedActivity returned error: %v", err)
+	}
+	if err := store.SaveWorkoutMatch(ctx, domain.WorkoutMatch{
+		ID:                 "old-match",
+		PlannedWorkoutID:   week.Workouts[0].ID,
+		ImportedActivityID: activity.ID,
+		Status:             domain.WorkoutMatchStatusRejected,
+		Confidence:         domain.MatchConfidenceLow,
+		MatchedBy:          domain.MatchSourceAutomatic,
+		MatchedAt:          time.Date(2026, time.June, 2, 8, 0, 0, 0, time.UTC),
+		Notes:              "Older rejected match.",
+	}); err != nil {
+		t.Fatalf("SaveWorkoutMatch old returned error: %v", err)
+	}
+	if err := store.SaveWorkoutMatch(ctx, domain.WorkoutMatch{
+		ID:                 "new-match",
+		PlannedWorkoutID:   week.Workouts[0].ID,
+		ImportedActivityID: activity.ID,
+		Status:             domain.WorkoutMatchStatusUncertain,
+		Confidence:         domain.MatchConfidenceMedium,
+		MatchedBy:          domain.MatchSourceAutomatic,
+		MatchedAt:          time.Date(2026, time.June, 2, 9, 0, 0, 0, time.UTC),
+		Notes:              "Newer uncertain match.",
+	}); err != nil {
+		t.Fatalf("SaveWorkoutMatch new returned error: %v", err)
+	}
+
+	response, err := currentPlanWeekServiceWithStore(store).GetCurrentPlanWeek(ctx, GetCurrentPlanWeekRequest{
+		PlanWeekID: week.ID,
+	})
+	if err != nil {
+		t.Fatalf("GetCurrentPlanWeek returned error: %v", err)
+	}
+
+	if len(response.WorkoutMatches) != 1 {
+		t.Fatalf("WorkoutMatches = %d, want 1", len(response.WorkoutMatches))
+	}
+	if response.WorkoutMatches[0].ID != "new-match" {
+		t.Fatalf("WorkoutMatches[0].ID = %q, want new-match", response.WorkoutMatches[0].ID)
 	}
 }
 

@@ -128,6 +128,7 @@ func newMux(services app.Services, options ...muxOptions) *http.ServeMux {
 	if option.strava != nil {
 		mux.HandleFunc("/providers/strava/oauth/callback", stravaOAuthCallbackHandler(option.strava))
 		mux.HandleFunc("/providers/strava/webhook", stravaWebhookHandler(option.strava))
+		mux.HandleFunc("/providers/strava/retry-imports", stravaRetryImportsHandler(option.strava))
 	}
 	return mux
 }
@@ -259,10 +260,27 @@ func stravaOAuthCallbackHandler(runtime *stravaRuntime) http.HandlerFunc {
 		}
 		runStravaInitialBackfill(runtime, response.Connection.ID)
 
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("Strava connected\n"))
+		_, _ = w.Write([]byte(stravaOAuthCallbackPage("runthread://provider/strava/connected")))
 	}
+}
+
+func stravaOAuthCallbackPage(returnURL string) string {
+	return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Strava connected</title>
+</head>
+<body>
+  <h1>Strava connected</h1>
+  <p>You can return to Runthread.</p>
+  <p><a href="` + returnURL + `">Open Runthread</a></p>
+</body>
+</html>
+`
 }
 
 func runStravaInitialBackfill(runtime *stravaRuntime, providerConnectionID string) {
@@ -353,6 +371,55 @@ func stravaWebhookRetryAfter(err error) string {
 		return "900"
 	}
 	return "60"
+}
+
+type retryStravaImportsHTTPBody struct {
+	AthleteID      string `json:"athleteId"`
+	GoalID         string `json:"goalId"`
+	TargetWeekDate string `json:"targetWeekDate"`
+	Limit          int    `json:"limit"`
+}
+
+func stravaRetryImportsHandler(runtime *stravaRuntime) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.Header().Set("Allow", http.MethodPost)
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		defer r.Body.Close()
+
+		var body retryStravaImportsHTTPBody
+		if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&body); err != nil {
+			http.Error(w, "decode retry imports request failed", http.StatusBadRequest)
+			return
+		}
+		var targetWeekDate time.Time
+		if body.TargetWeekDate != "" {
+			parsed, err := time.Parse("2006-01-02", body.TargetWeekDate)
+			if err != nil {
+				http.Error(w, "targetWeekDate must be YYYY-MM-DD", http.StatusBadRequest)
+				return
+			}
+			targetWeekDate = parsed
+		}
+
+		result, err := app.ImportedActivityRetryService{Store: runtime.Store}.RetryImportedActivities(r.Context(), app.RetryImportedActivitiesRequest{
+			AthleteID:      body.AthleteID,
+			GoalID:         body.GoalID,
+			TargetWeekDate: targetWeekDate,
+			Limit:          body.Limit,
+		})
+		if err != nil {
+			http.Error(w, "retry Strava imports failed", http.StatusInternalServerError)
+			log.Printf("strava retry imports failed athlete_id=%s error=%v", body.AthleteID, err)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(result)
+	}
 }
 
 func startStravaWebhookRetryWorker(ctx context.Context, runtime *stravaRuntime, interval time.Duration) {

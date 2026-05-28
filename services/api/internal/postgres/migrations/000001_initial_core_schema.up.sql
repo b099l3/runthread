@@ -3,7 +3,7 @@ CREATE TABLE athlete_profiles (
     display_name text,
     experience_level text,
     current_weekly_distance_meters numeric NOT NULL DEFAULT 0,
-    preferred_run_days smallint[] NOT NULL DEFAULT '{}',
+    preferred_run_days bigint[] NOT NULL DEFAULT '{}',
     constraints text[] NOT NULL DEFAULT '{}',
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
@@ -130,4 +130,3 @@ CREATE INDEX workout_results_imported_activity_id_idx ON workout_results (import
 CREATE INDEX adaptation_events_athlete_id_created_at_idx ON adaptation_events (athlete_id, created_at);
 CREATE INDEX adaptation_events_plan_id_created_at_idx ON adaptation_events (plan_id, created_at);
 CREATE INDEX adaptation_event_changes_event_id_position_idx ON adaptation_event_changes (adaptation_event_id, position);
-

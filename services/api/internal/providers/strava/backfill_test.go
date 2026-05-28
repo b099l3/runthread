@@ -108,7 +108,43 @@ func TestRunInitialBackfillIsIdempotentForSameStravaActivity(t *testing.T) {
 	}
 }
 
-func TestRunInitialBackfillIgnoresUnsupportedNonRunActivity(t *testing.T) {
+func TestRunInitialBackfillUsesStableImportedActivityIDAcrossConnections(t *testing.T) {
+	ctx := context.Background()
+	store := repository.NewInMemoryStore()
+	firstConnection := connectedStravaConnection("connection-1", "athlete-1")
+	secondConnection := connectedStravaConnection("connection-2", "athlete-1")
+	if err := store.SaveProviderConnection(ctx, firstConnection); err != nil {
+		t.Fatalf("SaveProviderConnection first returned error: %v", err)
+	}
+	if err := store.SaveProviderConnection(ctx, secondConnection); err != nil {
+		t.Fatalf("SaveProviderConnection second returned error: %v", err)
+	}
+	fetcher := &fakeActivityFetcher{
+		summaries: []MockActivitySummary{{ActivityID: "strava-activity-1"}},
+		details: map[string]MockActivityPayload{
+			"strava-activity-1": backfillPayload("strava-activity-1", "Run"),
+		},
+	}
+	service := testBackfillService(t, store, fetcher)
+
+	first, err := service.RunInitialBackfill(ctx, RunBackfillRequest{ProviderConnectionID: firstConnection.ID})
+	if err != nil {
+		t.Fatalf("first RunInitialBackfill returned error: %v", err)
+	}
+	second, err := service.RunInitialBackfill(ctx, RunBackfillRequest{ProviderConnectionID: secondConnection.ID})
+	if err != nil {
+		t.Fatalf("second RunInitialBackfill returned error: %v", err)
+	}
+
+	if first.Imports[0].ImportedActivity.ID != second.Imports[0].ImportedActivity.ID {
+		t.Fatalf("imported activity id changed from %q to %q", first.Imports[0].ImportedActivity.ID, second.Imports[0].ImportedActivity.ID)
+	}
+	if first.Imports[0].ProviderActivity.ID == second.Imports[0].ProviderActivity.ID {
+		t.Fatalf("provider activity id should remain connection-scoped, got %q", first.Imports[0].ProviderActivity.ID)
+	}
+}
+
+func TestRunInitialBackfillIgnoresUnsupportedActivity(t *testing.T) {
 	ctx := context.Background()
 	store := repository.NewInMemoryStore()
 	connection := connectedStravaConnection("connection-1", "athlete-1")
@@ -116,9 +152,9 @@ func TestRunInitialBackfillIgnoresUnsupportedNonRunActivity(t *testing.T) {
 		t.Fatalf("SaveProviderConnection returned error: %v", err)
 	}
 	service := testBackfillService(t, store, &fakeActivityFetcher{
-		summaries: []MockActivitySummary{{ActivityID: "strava-ride-1"}},
+		summaries: []MockActivitySummary{{ActivityID: "strava-swim-1"}},
 		details: map[string]MockActivityPayload{
-			"strava-ride-1": backfillPayload("strava-ride-1", "Ride"),
+			"strava-swim-1": backfillPayload("strava-swim-1", "Swim"),
 		},
 	})
 
@@ -137,7 +173,7 @@ func TestRunInitialBackfillIgnoresUnsupportedNonRunActivity(t *testing.T) {
 		t.Fatalf("provider activity status = %q, want ignored", result.Imports[0].ProviderActivity.Status)
 	}
 	if result.Imports[0].ImportedActivity != nil {
-		t.Fatal("expected no imported activity for ignored non-run")
+		t.Fatal("expected no imported activity for ignored unsupported activity")
 	}
 }
 

@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"fmt"
+	"math"
+	"time"
 
 	"github.com/runthread/runthread/services/api/internal/adaptation"
 	"github.com/runthread/runthread/services/api/internal/domain"
@@ -89,6 +91,10 @@ func (s ProviderImportService) CompleteProviderImport(ctx context.Context, reque
 	if outcome == "" {
 		outcome = domain.WorkoutOutcomeCompletedAsPlanned
 	}
+	resultNotes := "Created by provider import orchestration."
+	if matching.IsRideCrossTrainingMatch(workout.Type, importResult.ImportedActivity.Type) {
+		resultNotes = "Completed by ride cross-training activity."
+	}
 	updatedWorkout, result, err := domain.MarkWorkoutCompleted(workout, domain.WorkoutCompletion{
 		ResultID:           request.ResultID,
 		ImportedActivityID: importResult.ImportedActivity.ID,
@@ -96,7 +102,7 @@ func (s ProviderImportService) CompleteProviderImport(ctx context.Context, reque
 		Distance:           importResult.ImportedActivity.Distance,
 		Duration:           importResult.ImportedActivity.Duration,
 		Outcome:            outcome,
-		Notes:              "Created by provider import orchestration.",
+		Notes:              resultNotes,
 	})
 	if err != nil {
 		return CompleteProviderImportResponse{ProviderImport: importResult, PlanWeek: week, WorkoutMatch: match}, fmt.Errorf("mark workout completed: %w", err)
@@ -181,7 +187,7 @@ func bestProviderImportMatch(matcher matching.Matcher, week domain.PlanWeek, act
 		if err != nil {
 			continue
 		}
-		if !found || providerMatchRank(match) > providerMatchRank(bestMatch) {
+		if !found || providerMatchCandidateRank(workout, activity, match) > providerMatchCandidateRank(bestWorkout, activity, bestMatch) {
 			bestWorkout = workout
 			bestMatch = match
 			found = true
@@ -191,6 +197,20 @@ func bestProviderImportMatch(matcher matching.Matcher, week domain.PlanWeek, act
 		return domain.PlannedWorkout{}, domain.WorkoutMatch{}, fmt.Errorf("no matchable planned workouts found")
 	}
 	return bestWorkout, bestMatch, nil
+}
+
+func providerMatchCandidateRank(workout domain.PlannedWorkout, activity domain.ImportedActivity, match domain.WorkoutMatch) int {
+	rank := providerMatchRank(match) * 10000
+	if providerActivityTypeCompatible(workout.Type, activity.Type) {
+		rank += 2000
+	}
+	if workout.Type != domain.WorkoutTypeRest {
+		rank += 1000
+	}
+	rank += (14 - providerMinInt(providerCalendarDayGap(workout.ScheduledFor, activity.StartedAt), 14)) * 50
+	rank += int(math.Round(providerClosenessRatio(workout.TargetDistance.Meters, activity.Distance.Meters) * 25))
+	rank += int(math.Round(providerClosenessRatio(workout.TargetDuration.Seconds(), activity.Duration.Seconds()) * 25))
+	return rank
 }
 
 func providerMatchRank(match domain.WorkoutMatch) int {
@@ -217,6 +237,52 @@ func providerConfidenceRank(confidence domain.MatchConfidence) int {
 	default:
 		return 0
 	}
+}
+
+func providerActivityTypeCompatible(workoutType domain.WorkoutType, activityType domain.ActivityType) bool {
+	switch workoutType {
+	case domain.WorkoutTypeEasy, domain.WorkoutTypeLongRun, domain.WorkoutTypeWorkout, domain.WorkoutTypeRecovery:
+		return activityType == domain.ActivityTypeRun || activityType == domain.ActivityTypeTrailRun || activityType == domain.ActivityTypeTreadmill || activityType == domain.ActivityTypeRide
+	case domain.WorkoutTypeRace:
+		return activityType == domain.ActivityTypeRun || activityType == domain.ActivityTypeTrailRun
+	case domain.WorkoutTypeRide:
+		return activityType == domain.ActivityTypeRide
+	default:
+		return false
+	}
+}
+
+func providerCalendarDayGap(a time.Time, b time.Time) int {
+	aDate := providerMidnightUTC(a)
+	bDate := providerMidnightUTC(b)
+	diff := aDate.Sub(bDate)
+	if diff < 0 {
+		diff = -diff
+	}
+	return int(diff.Hours() / 24)
+}
+
+func providerMidnightUTC(value time.Time) time.Time {
+	year, month, day := value.In(time.UTC).Date()
+	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+}
+
+func providerClosenessRatio(expected float64, actual float64) float64 {
+	if expected <= 0 || actual <= 0 {
+		return 0
+	}
+	ratio := actual / expected
+	if ratio > 1 {
+		ratio = 1 / ratio
+	}
+	return math.Max(0, ratio)
+}
+
+func providerMinInt(a int, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func (s ProviderImportService) persistProviderCompletion(ctx context.Context, week domain.PlanWeek, workout domain.PlannedWorkout, match domain.WorkoutMatch, result domain.WorkoutResult, adaptationEvent *domain.AdaptationEvent) error {

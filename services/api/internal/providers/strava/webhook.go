@@ -192,7 +192,7 @@ func (s WebhookService) importWebhookActivity(ctx context.Context, connection re
 		}
 		return result, false, false, err
 	}
-	activity.ID = providerimport.DeterministicID("runthread:imported-activity", connection.ID, event.ObjectID)
+	activity.ID = stravaImportedActivityID(event.ObjectID)
 	importRequest.ImportedActivity = &activity
 
 	result, err := s.Importer.ImportActivity(ctx, importRequest)

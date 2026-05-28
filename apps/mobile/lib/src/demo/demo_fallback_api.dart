@@ -10,9 +10,11 @@ class DemoFallbackRunthreadApi implements RunthreadApi {
   static Object? lastFallbackError;
 
   @override
-  Future<CurrentPlanWeek> getCurrentPlanWeek() async {
+  Future<CurrentPlanWeek> getCurrentPlanWeek({DateTime? targetWeekDate}) async {
     try {
-      final response = await primary.getCurrentPlanWeek();
+      final response = await primary.getCurrentPlanWeek(
+        targetWeekDate: targetWeekDate,
+      );
       lastFallbackError = null;
       return response;
     } catch (error) {
@@ -28,5 +30,19 @@ class DemoFallbackRunthreadApi implements RunthreadApi {
     } catch (_) {
       return ProviderConnectionStatusView.notConnected(statusUnavailable: true);
     }
+  }
+
+  @override
+  Future<StartProviderConnectionResult> startProviderConnection() {
+    return primary.startProviderConnection();
+  }
+
+  @override
+  Future<DisconnectProviderConnectionResult> disconnectProviderConnection({
+    String? providerConnectionId,
+  }) {
+    return primary.disconnectProviderConnection(
+      providerConnectionId: providerConnectionId,
+    );
   }
 }

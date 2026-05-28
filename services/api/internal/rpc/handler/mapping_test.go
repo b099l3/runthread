@@ -76,6 +76,18 @@ func TestCompleteImportedActivityRequestToApp(t *testing.T) {
 	}
 }
 
+func TestRideEnumMappings(t *testing.T) {
+	if got := activityTypeToDomain(rpcv1.ActivityType_ACTIVITY_TYPE_RIDE); got != domain.ActivityTypeRide {
+		t.Fatalf("activityTypeToDomain ride = %q, want %q", got, domain.ActivityTypeRide)
+	}
+	if got := activityTypeFromDomain(domain.ActivityTypeRide); got != rpcv1.ActivityType_ACTIVITY_TYPE_RIDE {
+		t.Fatalf("activityTypeFromDomain ride = %s, want ACTIVITY_TYPE_RIDE", got)
+	}
+	if got := workoutTypeFromDomain(domain.WorkoutTypeRide); got != rpcv1.WorkoutType_WORKOUT_TYPE_RIDE {
+		t.Fatalf("workoutTypeFromDomain ride = %s, want WORKOUT_TYPE_RIDE", got)
+	}
+}
+
 func TestGetCurrentPlanWeekRequestToApp(t *testing.T) {
 	appRequest, err := getCurrentPlanWeekRequestToApp(&rpcv1.GetCurrentPlanWeekRequest{
 		AthleteId:      "athlete-1",

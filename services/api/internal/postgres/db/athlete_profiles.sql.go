@@ -37,7 +37,7 @@ type CreateAthleteProfileParams struct {
 	DisplayName                 sql.NullString `json:"display_name"`
 	ExperienceLevel             sql.NullString `json:"experience_level"`
 	CurrentWeeklyDistanceMeters float64        `json:"current_weekly_distance_meters"`
-	PreferredRunDays            []int16        `json:"preferred_run_days"`
+	PreferredRunDays            []int64        `json:"preferred_run_days"`
 	Constraints                 []string       `json:"constraints"`
 }
 
@@ -113,7 +113,7 @@ type UpdateAthleteProfileParams struct {
 	DisplayName                 sql.NullString `json:"display_name"`
 	ExperienceLevel             sql.NullString `json:"experience_level"`
 	CurrentWeeklyDistanceMeters float64        `json:"current_weekly_distance_meters"`
-	PreferredRunDays            []int16        `json:"preferred_run_days"`
+	PreferredRunDays            []int64        `json:"preferred_run_days"`
 	Constraints                 []string       `json:"constraints"`
 	ID                          uuid.UUID      `json:"id"`
 }

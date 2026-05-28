@@ -39,7 +39,7 @@ func TestAthleteProfileToCreateParams(t *testing.T) {
 	if params.CurrentWeeklyDistanceMeters != 42000 {
 		t.Fatalf("CurrentWeeklyDistanceMeters = %v, want 42000", params.CurrentWeeklyDistanceMeters)
 	}
-	assertInt16s(t, params.PreferredRunDays, []int16{1, 3, 0})
+	assertInt64s(t, params.PreferredRunDays, []int64{1, 3, 0})
 	assertStrings(t, params.Constraints, []string{"no Tuesdays"})
 }
 
@@ -78,7 +78,7 @@ func TestAthleteProfileFromDB(t *testing.T) {
 		DisplayName:                 sql.NullString{String: "Rin", Valid: true},
 		ExperienceLevel:             sql.NullString{String: string(domain.ExperienceLevelBeginner), Valid: true},
 		CurrentWeeklyDistanceMeters: 18000,
-		PreferredRunDays:            []int16{2, 4, 6},
+		PreferredRunDays:            []int64{2, 4, 6},
 		Constraints:                 []string{"keep long run short"},
 	}
 
@@ -119,7 +119,7 @@ func TestAthleteProfileFromDBUsesEmptyStringsForNulls(t *testing.T) {
 	}
 }
 
-func assertInt16s(t *testing.T, got, want []int16) {
+func assertInt64s(t *testing.T, got, want []int64) {
 	t.Helper()
 	if len(got) != len(want) {
 		t.Fatalf("len(%v) = %d, want %d", got, len(got), len(want))

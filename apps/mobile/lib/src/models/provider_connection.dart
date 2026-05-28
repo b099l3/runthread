@@ -39,6 +39,9 @@ class ProviderConnectionStatusView {
   }
 
   String get description {
+    if (statusUnavailable) {
+      return 'Connection status is unavailable. Check the backend and try again.';
+    }
     if (!hasConnection || connection == null) {
       return 'Run completion will come from imported Strava activity once provider access is ready.';
     }
@@ -58,6 +61,61 @@ class ProviderConnectionStatusView {
       ProviderConnectionStatus.unspecified =>
         'Run completion will come from imported Strava activity once provider access is ready.',
     };
+  }
+}
+
+class StartProviderConnectionResult {
+  const StartProviderConnectionResult({
+    required this.connection,
+    required this.authorizationUrl,
+    required this.state,
+    required this.oauthReady,
+  });
+
+  final ProviderConnection connection;
+  final String authorizationUrl;
+  final String state;
+  final bool oauthReady;
+
+  factory StartProviderConnectionResult.fromJson(Map<String, dynamic> json) {
+    final connectionJson = json['connection'];
+    return StartProviderConnectionResult(
+      connection: connectionJson is Map<String, dynamic>
+          ? ProviderConnection.fromJson(connectionJson)
+          : const ProviderConnection(
+              id: '',
+              athleteId: '',
+              provider: Provider.unspecified,
+              status: ProviderConnectionStatus.unspecified,
+              lastError: '',
+            ),
+      authorizationUrl: json['authorizationUrl'] as String? ?? '',
+      state: json['state'] as String? ?? '',
+      oauthReady: json['oauthReady'] as bool? ?? false,
+    );
+  }
+}
+
+class DisconnectProviderConnectionResult {
+  const DisconnectProviderConnectionResult({required this.connection});
+
+  final ProviderConnection connection;
+
+  factory DisconnectProviderConnectionResult.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    final connectionJson = json['connection'];
+    return DisconnectProviderConnectionResult(
+      connection: connectionJson is Map<String, dynamic>
+          ? ProviderConnection.fromJson(connectionJson)
+          : const ProviderConnection(
+              id: '',
+              athleteId: '',
+              provider: Provider.unspecified,
+              status: ProviderConnectionStatus.unspecified,
+              lastError: '',
+            ),
+    );
   }
 }
 

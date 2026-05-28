@@ -16,6 +16,10 @@ type ProviderActivityMatchService struct {
 	Now     func() time.Time
 }
 
+type automaticWorkoutMatchPruner interface {
+	DeleteAutomaticWorkoutMatchesByImportedActivity(ctx context.Context, importedActivityID string, keepMatchID string) error
+}
+
 type MatchProviderActivityRequest struct {
 	ImportedActivityID string
 	ImportedActivity   domain.ImportedActivity
@@ -53,6 +57,11 @@ func (s ProviderActivityMatchService) MatchProviderActivity(ctx context.Context,
 	}
 	if err := s.Store.SaveWorkoutMatch(ctx, match); err != nil {
 		return MatchProviderActivityResponse{ImportedActivity: activity, PlanWeek: week, PlannedWorkout: workout, WorkoutMatch: match}, fmt.Errorf("save workout match: %w", err)
+	}
+	if pruner, ok := s.Store.(automaticWorkoutMatchPruner); ok {
+		if err := pruner.DeleteAutomaticWorkoutMatchesByImportedActivity(ctx, activity.ID, match.ID); err != nil {
+			return MatchProviderActivityResponse{ImportedActivity: activity, PlanWeek: week, PlannedWorkout: workout, WorkoutMatch: match}, fmt.Errorf("prune stale workout matches: %w", err)
+		}
 	}
 	return MatchProviderActivityResponse{
 		ImportedActivity: activity,

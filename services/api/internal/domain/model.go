@@ -273,11 +273,12 @@ const (
 	WorkoutTypeRace     WorkoutType = "race"
 	WorkoutTypeRest     WorkoutType = "rest"
 	WorkoutTypeStrength WorkoutType = "strength"
+	WorkoutTypeRide     WorkoutType = "ride"
 )
 
 func (t WorkoutType) Valid() bool {
 	switch t {
-	case WorkoutTypeEasy, WorkoutTypeLongRun, WorkoutTypeWorkout, WorkoutTypeRecovery, WorkoutTypeRace, WorkoutTypeRest, WorkoutTypeStrength:
+	case WorkoutTypeEasy, WorkoutTypeLongRun, WorkoutTypeWorkout, WorkoutTypeRecovery, WorkoutTypeRace, WorkoutTypeRest, WorkoutTypeStrength, WorkoutTypeRide:
 		return true
 	default:
 		return false
@@ -350,11 +351,12 @@ const (
 	ActivityTypeTreadmill ActivityType = "treadmill"
 	ActivityTypeWalk      ActivityType = "walk"
 	ActivityTypeOther     ActivityType = "other"
+	ActivityTypeRide      ActivityType = "ride"
 )
 
 func (t ActivityType) Valid() bool {
 	switch t {
-	case ActivityTypeRun, ActivityTypeTrailRun, ActivityTypeTreadmill, ActivityTypeWalk, ActivityTypeOther:
+	case ActivityTypeRun, ActivityTypeTrailRun, ActivityTypeTreadmill, ActivityTypeWalk, ActivityTypeOther, ActivityTypeRide:
 		return true
 	default:
 		return false

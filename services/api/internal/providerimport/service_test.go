@@ -64,10 +64,12 @@ func TestServiceUpdatesExistingProviderActivity(t *testing.T) {
 	ctx := context.Background()
 	store := repository.NewInMemoryStore()
 	connection := testConnection()
+	existingImportedActivityID := "existing-imported-activity"
 	existing := repository.ProviderActivity{
 		ID:                   "existing-provider-activity",
 		ProviderConnectionID: connection.ID,
 		AthleteID:            connection.AthleteID,
+		ImportedActivityID:   existingImportedActivityID,
 		Provider:             connection.Provider,
 		ProviderActivityID:   "garmin-activity-1",
 		ProviderActivityType: "old_type",
@@ -100,6 +102,12 @@ func TestServiceUpdatesExistingProviderActivity(t *testing.T) {
 	}
 	if result.ProviderActivity.Status != repository.ProviderActivityStatusNormalised {
 		t.Fatalf("provider activity status = %q, want normalised", result.ProviderActivity.Status)
+	}
+	if result.ImportedActivity == nil {
+		t.Fatal("expected imported activity")
+	}
+	if result.ImportedActivity.ID != existingImportedActivityID {
+		t.Fatalf("imported activity id = %q, want existing %q", result.ImportedActivity.ID, existingImportedActivityID)
 	}
 }
 

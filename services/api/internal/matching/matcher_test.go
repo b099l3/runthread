@@ -35,6 +35,49 @@ func TestMatchActivityRejectsTypeMismatch(t *testing.T) {
 	}
 }
 
+func TestMatchActivityAcceptsRideAsRunCrossTrainingByDuration(t *testing.T) {
+	activity := importedActivity()
+	activity.Type = domain.ActivityTypeRide
+	activity.Distance = domain.Distance{Meters: 26000}
+
+	match := mustMatch(t, plannedWorkout(), activity)
+
+	if match.Status != domain.WorkoutMatchStatusMatched {
+		t.Fatalf("expected matched status, got %q", match.Status)
+	}
+	if match.Confidence != domain.MatchConfidenceMedium {
+		t.Fatalf("expected medium confidence, got %q", match.Confidence)
+	}
+	if match.Notes != "Completed by ride cross-training activity." {
+		t.Fatalf("match notes = %q", match.Notes)
+	}
+}
+
+func TestMatchActivityRejectsWeakRideCrossTrainingMatch(t *testing.T) {
+	activity := importedActivity()
+	activity.Type = domain.ActivityTypeRide
+	activity.Duration = 20 * time.Minute
+
+	match := mustMatch(t, plannedWorkout(), activity)
+
+	if match.Status != domain.WorkoutMatchStatusRejected {
+		t.Fatalf("expected rejected status, got %q", match.Status)
+	}
+}
+
+func TestMatchActivityKeepsRaceRunOnly(t *testing.T) {
+	workout := plannedWorkout()
+	workout.Type = domain.WorkoutTypeRace
+	activity := importedActivity()
+	activity.Type = domain.ActivityTypeRide
+
+	match := mustMatch(t, workout, activity)
+
+	if match.Status != domain.WorkoutMatchStatusRejected {
+		t.Fatalf("expected rejected race ride match, got %q", match.Status)
+	}
+}
+
 func TestMatchActivityRejectsLargeDateGap(t *testing.T) {
 	activity := importedActivity()
 	activity.StartedAt = dateTime(2026, time.June, 8, 7, 30)
