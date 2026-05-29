@@ -9,70 +9,48 @@ const signupAction = loopsFormId
 
 const features = [
   {
-    label: "Adaptive planning",
-    title: "Training weeks that adjust without drama.",
-    body: "Runthread starts with a practical plan, then responds to completed, missed, and underperformed sessions with deterministic changes you can understand.",
-  },
-  {
-    label: "Strava-first beta",
-    title: "Your runs flow in from the tools you already use.",
-    body: "The beta path focuses on Strava-backed imports so workout completion is driven by real activity data instead of manual checkboxes.",
-  },
-  {
-    label: "Workout matching",
-    title: "Completed activities are matched to the right workout.",
-    body: "Runs are compared against the plan by date, distance, duration, and type, with uncertain matches kept visible for review.",
-  },
-  {
-    label: "Calm explanations",
-    title: "When the plan changes, you see why.",
-    body: "Runthread keeps adaptation conservative and explainable, so the product feels like a steady training partner instead of a black box.",
-  },
-];
-
-const flow = [
-  ["Plan", "Start the week with a clear set of runs."],
-  ["Run", "Complete sessions using your normal tracker."],
-  ["Import", "Bring provider activities into Runthread."],
-  ["Match", "Connect each activity to the intended workout."],
-  ["Adapt", "Adjust the week when real life changes the plan."],
-];
-
-const stages = [
-  {
-    key: "plan",
     label: "Plan",
-    title: "32.4 km week built around your rhythm",
-    body: "Easy days, threshold work, and the long run land where they can actually happen.",
-    metric: "4 runs",
+    title: "A week that starts realistic.",
+    body: "Runthread builds around your current training, available days, and the work that matters most.",
   },
   {
-    key: "run",
-    label: "Run",
-    title: "Your real activity becomes the source of truth",
-    body: "Keep recording with your normal tracker. Runthread waits for the completed work.",
-    metric: "7.2 km",
+    label: "Sync",
+    title: "Completed runs come back in.",
+    body: "Strava-backed imports let the app react to what actually happened, not what you remembered to mark done.",
   },
   {
-    key: "import",
-    label: "Import",
-    title: "Strava pulls the session into the loop",
-    body: "Provider data stays behind the scenes while Runthread normalises the useful training signal.",
-    metric: "Synced",
-  },
-  {
-    key: "match",
     label: "Match",
-    title: "The run is matched to today, not guessed",
-    body: "Date, distance, duration, and workout type combine into a confidence score you can review.",
-    metric: "94%",
+    title: "Activities meet the right workout.",
+    body: "Date, distance, duration, and type are used to connect a completed run to the plan with clear confidence.",
   },
   {
-    key: "adapt",
     label: "Adapt",
-    title: "Thursday gets lighter after a partial finish",
-    body: "The plan changes conservatively and explains the reason in plain language.",
-    metric: "-1.5 km",
+    title: "Changes stay calm.",
+    body: "When a week shifts, Runthread explains what changed and why, without pretending every run needs a dramatic reset.",
+  },
+];
+
+const previewCards = [
+  {
+    label: "Today",
+    title: "Easy run",
+    detail: "7.2 km / relaxed",
+    note: "Scheduled for recovery after Tuesday's workout.",
+    status: "Ready",
+  },
+  {
+    label: "Imported",
+    title: "Morning run",
+    detail: "6.8 km / 42 min",
+    note: "Matched to today's easy run with high confidence.",
+    status: "Matched",
+  },
+  {
+    label: "Updated",
+    title: "Long run adjusted",
+    detail: "15.0 km to 13.5 km",
+    note: "Reduced slightly after a partial completion earlier in the week.",
+    status: "Adapted",
   },
 ];
 ---
@@ -112,16 +90,14 @@ const stages = [
     </header>
 
     <main>
-      <section class="hero-shell">
-        <div class="hero-orbit" aria-hidden="true"></div>
-        <div class="hero section-band">
+      <section class="hero section-band">
         <div class="hero-copy" data-reveal>
-          <p class="eyebrow">Private beta waitlist</p>
-          <h1>Training plans with a live thread back to reality.</h1>
+          <p class="eyebrow">Private beta</p>
+          <h1>Running plans that adjust quietly.</h1>
           <p class="lede">
-            Runthread connects planned workouts to completed activities, matches
-            the work you actually did, and adjusts your week with clear,
-            conservative reasoning.
+            Runthread connects your weekly plan to the runs you actually complete,
+            then makes small, explainable changes when training does not go exactly
+            to plan.
           </p>
 
           <form
@@ -148,81 +124,45 @@ const stages = [
             <p class="form-status" id="signup-status" data-form-status role="status"></p>
           </form>
           <p class="form-note" id="signup-note">
-            Early access will be invite-only while Strava import and plan adaptation are validated.
+            Early access will be invite-only while Strava import, workout matching,
+            and adaptation are validated.
           </p>
         </div>
 
-        <div class="thread-demo" data-reveal data-thread-demo>
-          <div class="thread-stage">
-            <div class="stage-topline">
-              <span>Week 12</span>
-              <strong data-thread-metric>{stages[0].metric}</strong>
+        <div class="preview" data-reveal data-preview>
+          <div class="preview-card">
+            <div class="preview-top">
+              <span data-preview-label>{previewCards[0].label}</span>
+              <strong data-preview-status>{previewCards[0].status}</strong>
             </div>
-            <div class="route-board" aria-hidden="true">
-              <svg viewBox="0 0 560 320" role="img">
-                <defs>
-                  <linearGradient id="threadGradient" x1="0%" x2="100%" y1="0%" y2="0%">
-                    <stop offset="0%" stop-color="#d95f43" />
-                    <stop offset="52%" stop-color="#d5a83b" />
-                    <stop offset="100%" stop-color="#4ac7a5" />
-                  </linearGradient>
-                </defs>
-                <path
-                  class="route-shadow"
-                  d="M36 232 C118 60 210 300 296 128 S432 70 524 218"
-                />
-                <path
-                  class="route-base"
-                  d="M36 232 C118 60 210 300 296 128 S432 70 524 218"
-                />
-                <path
-                  class="route-progress"
-                  data-route-progress
-                  d="M36 232 C118 60 210 300 296 128 S432 70 524 218"
-                />
-              </svg>
-              {
-                stages.map((stage, index) => (
-                  <button
-                    class={`route-point route-point-${index + 1}${index === 0 ? " is-active" : ""}`}
-                    type="button"
-                    data-thread-step={String(index)}
-                    aria-label={`Show ${stage.label} stage`}
-                    aria-pressed={index === 0 ? "true" : "false"}
-                  >
-                    <span>{stage.label}</span>
-                  </button>
-                ))
-              }
-            </div>
-            <div class="stage-card">
-              <p data-thread-label>{stages[0].label}</p>
-              <h2 data-thread-title>{stages[0].title}</h2>
-              <span data-thread-body>{stages[0].body}</span>
+            <h2 data-preview-title>{previewCards[0].title}</h2>
+            <p data-preview-detail>{previewCards[0].detail}</p>
+            <div class="preview-note">
+              <span>Runthread</span>
+              <p data-preview-note>{previewCards[0].note}</p>
             </div>
           </div>
-          <div class="thread-tabs" aria-label="Preview Runthread training loop">
+          <div class="preview-controls" aria-label="Preview Runthread states">
             {
-              stages.map((stage, index) => (
+              previewCards.map((card, index) => (
                 <button
                   class={index === 0 ? "is-active" : ""}
                   type="button"
-                  data-thread-tab={String(index)}
+                  data-preview-step={String(index)}
                   aria-pressed={index === 0 ? "true" : "false"}
                 >
-                  {stage.label}
+                  {card.status}
                 </button>
               ))
             }
           </div>
         </div>
-        </div>
       </section>
 
       <section class="section-band feature-band" id="features">
         <div class="section-heading" data-reveal>
-          <p class="eyebrow">Feature showcase</p>
-          <h2>Built around the loop runners actually live in.</h2>
+          <p class="eyebrow">What it does</p>
+          <h2>A simpler loop for adaptive training.</h2>
         </div>
         <div class="feature-grid">
           {
@@ -239,20 +179,19 @@ const stages = [
 
       <section class="section-band flow-band" id="flow">
         <div class="section-heading compact" data-reveal>
-          <p class="eyebrow">Product flow</p>
-          <h2>Plan, run, import, match, adapt.</h2>
+          <p class="eyebrow">Beta focus</p>
+          <h2>Not a louder running app.</h2>
         </div>
-        <ol class="flow-list" aria-label="Runthread product flow">
-          {
-            flow.map(([title, body], index) => (
-              <li data-reveal>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <h3>{title}</h3>
-                <p>{body}</p>
-              </li>
-            ))
-          }
-        </ol>
+        <div class="statement-grid">
+          <p data-reveal>
+            The beta is intentionally narrow: weekly plan viewing, Strava-backed
+            activity import, workout matching, and deterministic adaptation.
+          </p>
+          <p data-reveal>
+            No streak pressure, no maximalist dashboard, and no mysterious training
+            decisions. Just the next useful adjustment.
+          </p>
+        </div>
       </section>
 
       <section class="section-band beta-band" id="beta">

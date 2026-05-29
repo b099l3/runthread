@@ -20,73 +20,61 @@ if (reducedMotion) {
 }
 
 const forms = document.querySelectorAll<HTMLFormElement>("[data-waitlist-form]");
-const threadStages = [
+const previewCards = [
   {
-    label: "Plan",
-    title: "32.4 km week built around your rhythm",
-    body: "Easy days, threshold work, and the long run land where they can actually happen.",
-    metric: "4 runs",
+    label: "Today",
+    title: "Easy run",
+    detail: "7.2 km / relaxed",
+    note: "Scheduled for recovery after Tuesday's workout.",
+    status: "Ready",
   },
   {
-    label: "Run",
-    title: "Your real activity becomes the source of truth",
-    body: "Keep recording with your normal tracker. Runthread waits for the completed work.",
-    metric: "7.2 km",
+    label: "Imported",
+    title: "Morning run",
+    detail: "6.8 km / 42 min",
+    note: "Matched to today's easy run with high confidence.",
+    status: "Matched",
   },
   {
-    label: "Import",
-    title: "Strava pulls the session into the loop",
-    body: "Provider data stays behind the scenes while Runthread normalises the useful training signal.",
-    metric: "Synced",
-  },
-  {
-    label: "Match",
-    title: "The run is matched to today, not guessed",
-    body: "Date, distance, duration, and workout type combine into a confidence score you can review.",
-    metric: "94%",
-  },
-  {
-    label: "Adapt",
-    title: "Thursday gets lighter after a partial finish",
-    body: "The plan changes conservatively and explains the reason in plain language.",
-    metric: "-1.5 km",
+    label: "Updated",
+    title: "Long run adjusted",
+    detail: "15.0 km to 13.5 km",
+    note: "Reduced slightly after a partial completion earlier in the week.",
+    status: "Adapted",
   },
 ];
 
-const threadDemo = document.querySelector<HTMLElement>("[data-thread-demo]");
+const preview = document.querySelector<HTMLElement>("[data-preview]");
 
-if (threadDemo) {
-  const label = threadDemo.querySelector<HTMLElement>("[data-thread-label]");
-  const title = threadDemo.querySelector<HTMLElement>("[data-thread-title]");
-  const body = threadDemo.querySelector<HTMLElement>("[data-thread-body]");
-  const metric = threadDemo.querySelector<HTMLElement>("[data-thread-metric]");
-  const progress = threadDemo.querySelector<SVGPathElement>("[data-route-progress]");
-  const controls = threadDemo.querySelectorAll<HTMLButtonElement>(
-    "[data-thread-step], [data-thread-tab]",
-  );
+if (preview) {
+  const label = preview.querySelector<HTMLElement>("[data-preview-label]");
+  const title = preview.querySelector<HTMLElement>("[data-preview-title]");
+  const detail = preview.querySelector<HTMLElement>("[data-preview-detail]");
+  const note = preview.querySelector<HTMLElement>("[data-preview-note]");
+  const status = preview.querySelector<HTMLElement>("[data-preview-status]");
+  const controls = preview.querySelectorAll<HTMLButtonElement>("[data-preview-step]");
 
   controls.forEach((control) => {
     control.addEventListener("click", () => {
-      const index = Number(control.dataset.threadStep ?? control.dataset.threadTab ?? "0");
-      setThreadStage(index);
+      const index = Number(control.dataset.previewStep ?? "0");
+      setPreviewCard(index);
     });
   });
 
-  setThreadStage(0);
+  setPreviewCard(0);
 
-  function setThreadStage(index: number) {
-    const boundedIndex = Math.max(0, Math.min(threadStages.length - 1, index));
-    const stage = threadStages[boundedIndex];
-    const progressValue = boundedIndex / (threadStages.length - 1);
+  function setPreviewCard(index: number) {
+    const boundedIndex = Math.max(0, Math.min(previewCards.length - 1, index));
+    const card = previewCards[boundedIndex];
 
-    if (label) label.textContent = stage.label;
-    if (title) title.textContent = stage.title;
-    if (body) body.textContent = stage.body;
-    if (metric) metric.textContent = stage.metric;
-    if (progress) progress.style.strokeDashoffset = String(1 - progressValue);
+    if (label) label.textContent = card.label;
+    if (title) title.textContent = card.title;
+    if (detail) detail.textContent = card.detail;
+    if (note) note.textContent = card.note;
+    if (status) status.textContent = card.status;
 
     controls.forEach((control) => {
-      const controlIndex = Number(control.dataset.threadStep ?? control.dataset.threadTab ?? "0");
+      const controlIndex = Number(control.dataset.previewStep ?? "0");
       const isActive = controlIndex === boundedIndex;
       control.classList.toggle("is-active", isActive);
       control.setAttribute("aria-pressed", String(isActive));
