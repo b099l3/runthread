@@ -1,29 +1,32 @@
-name: Web CI
+name: Security CI
 
 on:
   pull_request:
     paths:
-      - ".github/workflows/web-ci.yml"
-      - "apps/web/**"
-      - ".tool-versions"
+      - ".github/workflows/security-ci.yml"
+      - "apps/web/package.json"
+      - "apps/web/package-lock.json"
   push:
     branches:
       - main
     paths:
-      - ".github/workflows/web-ci.yml"
-      - "apps/web/**"
-      - ".tool-versions"
+      - ".github/workflows/security-ci.yml"
+      - "apps/web/package.json"
+      - "apps/web/package-lock.json"
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: web-ci-${{ github.workflow }}-${{ github.ref }}
+  group: security-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  web:
-    name: Astro build
+  web-audit:
+    name: Web dependency audit
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -43,5 +46,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
+      - name: Audit high and critical vulnerabilities
+        run: npm audit --audit-level=high

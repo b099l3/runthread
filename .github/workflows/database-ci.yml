@@ -54,17 +54,17 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Install PostgreSQL client
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes postgresql-client
-
       - name: Apply migrations
         run: |
           set -euo pipefail
           for migration in services/api/internal/postgres/migrations/*.up.sql; do
             echo "Applying $migration"
-            psql -v ON_ERROR_STOP=1 -f "$migration"
+            docker run --rm --network host \
+              -e PGPASSWORD="$PGPASSWORD" \
+              -v "$PWD:/workspace" \
+              -w /workspace \
+              postgres:16 \
+              psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -v ON_ERROR_STOP=1 -f "$migration"
           done
 
       - name: Roll back migrations
@@ -72,7 +72,12 @@ jobs:
           set -euo pipefail
           for migration in $(find services/api/internal/postgres/migrations -maxdepth 1 -name "*.down.sql" | sort -r); do
             echo "Rolling back $migration"
-            psql -v ON_ERROR_STOP=1 -f "$migration"
+            docker run --rm --network host \
+              -e PGPASSWORD="$PGPASSWORD" \
+              -v "$PWD:/workspace" \
+              -w /workspace \
+              postgres:16 \
+              psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -v ON_ERROR_STOP=1 -f "$migration"
           done
 
       - name: Reapply migrations
@@ -80,5 +85,10 @@ jobs:
           set -euo pipefail
           for migration in services/api/internal/postgres/migrations/*.up.sql; do
             echo "Reapplying $migration"
-            psql -v ON_ERROR_STOP=1 -f "$migration"
+            docker run --rm --network host \
+              -e PGPASSWORD="$PGPASSWORD" \
+              -v "$PWD:/workspace" \
+              -w /workspace \
+              postgres:16 \
+              psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -v ON_ERROR_STOP=1 -f "$migration"
           done

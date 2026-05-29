@@ -26,8 +26,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  backend:
-    name: Go checks
+  backend-tests:
+    name: Go tests and vet
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -53,10 +53,37 @@ jobs:
       - name: Run vet
         run: go vet ./...
 
+  backend-codegen:
+    name: Generated code checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/api
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.5"
+          cache: true
+          cache-dependency-path: services/api/go.sum
+
+      - name: Add Go bin to PATH
+        run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Cache codegen tools
+        uses: actions/cache@v4
+        with:
+          path: ~/go/bin
+          key: go-codegen-tools-sqlc-1.31.1-buf-1.69.0-${{ runner.os }}
+
       - name: Install codegen tools
         run: |
-          go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
-          go install github.com/bufbuild/buf/cmd/buf@v1.69.0
+          test -x "$(go env GOPATH)/bin/sqlc" || go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
+          test -x "$(go env GOPATH)/bin/buf" || go install github.com/bufbuild/buf/cmd/buf@v1.69.0
 
       - name: Lint protobuf
         run: buf lint
