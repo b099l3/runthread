@@ -1,0 +1,65 @@
+---
+const week = [
+  { day: "Mon", title: "Rest", meta: "Mobility", state: "quiet" },
+  { day: "Tue", title: "Intervals", meta: "6 x 3 min", state: "workout" },
+  { day: "Wed", title: "Easy", meta: "7 km", state: "matched" },
+  { day: "Thu", title: "Rest", meta: "Optional", state: "quiet" },
+  { day: "Fri", title: "Tempo", meta: "24 min", state: "workout" },
+  { day: "Sat", title: "Easy", meta: "5 km", state: "quiet" },
+  { day: "Sun", title: "Long", meta: "13.5 km", state: "adapted" },
+];
+---
+
+<div class="product-mockup" data-product-demo>
+  <div class="mockup-shell" aria-label="Runthread product preview">
+    <div class="mockup-header">
+      <div>
+        <span>Runthread</span>
+        <strong data-demo-heading>Adaptive week</strong>
+      </div>
+      <p data-demo-status>Plan ready</p>
+    </div>
+
+    <div class="week-grid">
+      {
+        week.map((run) => (
+          <div class:list={["week-tile", `week-tile--${run.state}`]}>
+            <span>{run.day}</span>
+            <strong>{run.title}</strong>
+            <p>{run.meta}</p>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="demo-detail">
+      <div class="detail-copy">
+        <span data-demo-label>Plan</span>
+        <strong data-demo-title>Build a week you can actually run.</strong>
+        <p data-demo-body>
+          Runthread starts with available days, useful training balance, and the
+          next race or goal.
+        </p>
+      </div>
+      <div class="detail-meter" aria-hidden="true">
+        <span data-demo-meter style="width: 34%"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-controls" aria-label="Preview the Runthread training loop">
+    {
+      ["Plan", "Run", "Import", "Match", "Adapt"].map((label, index) => (
+        <button
+          class={index === 0 ? "is-active" : ""}
+          type="button"
+          data-demo-step={String(index)}
+          aria-pressed={index === 0 ? "true" : "false"}
+        >
+          <span>{String(index + 1).padStart(2, "0")}</span>
+          {label}
+        </button>
+      ))
+    }
+  </div>
+</div>

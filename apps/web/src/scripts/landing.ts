@@ -19,68 +19,99 @@ if (reducedMotion) {
   revealElements.forEach((element) => observer.observe(element));
 }
 
-const forms = document.querySelectorAll<HTMLFormElement>("[data-waitlist-form]");
-const previewCards = [
+const demoStates = [
   {
-    label: "Today",
-    title: "Easy run",
-    detail: "7.2 km / relaxed",
-    note: "Scheduled for recovery after Tuesday's workout.",
-    status: "Ready",
+    heading: "Adaptive week",
+    status: "Plan ready",
+    label: "Plan",
+    title: "Build a week you can actually run.",
+    body: "Runthread starts with available days, useful training balance, and the next race or goal.",
+    meter: "34%",
   },
   {
-    label: "Imported",
-    title: "Morning run",
-    detail: "6.8 km / 42 min",
-    note: "Matched to today's easy run with high confidence.",
-    status: "Matched",
+    heading: "Run completed",
+    status: "Awaiting import",
+    label: "Run",
+    title: "Complete the session where you already track it.",
+    body: "The beta assumes your run happens outside Runthread first, then flows back into the plan.",
+    meter: "48%",
   },
   {
-    label: "Updated",
-    title: "Long run adjusted",
-    detail: "15.0 km to 13.5 km",
-    note: "Reduced slightly after a partial completion earlier in the week.",
-    status: "Adapted",
+    heading: "Activity imported",
+    status: "Strava synced",
+    label: "Import",
+    title: "Bring the activity details back into context.",
+    body: "Date, distance, duration, and activity type are enough to begin checking the planned workout.",
+    meter: "62%",
+  },
+  {
+    heading: "Workout matched",
+    status: "92% confidence",
+    label: "Match",
+    title: "Link the completed run to the likely workout.",
+    body: "Runthread shows the matching confidence before the plan adapts around that completed activity.",
+    meter: "80%",
+  },
+  {
+    heading: "Week adapted",
+    status: "Change explained",
+    label: "Adapt",
+    title: "Adjust the next useful thing, not the whole plan.",
+    body: "A small long-run change is explained while the rest of the week remains stable.",
+    meter: "100%",
   },
 ];
 
-const preview = document.querySelector<HTMLElement>("[data-preview]");
+const demo = document.querySelector<HTMLElement>("[data-product-demo]");
 
-if (preview) {
-  const label = preview.querySelector<HTMLElement>("[data-preview-label]");
-  const title = preview.querySelector<HTMLElement>("[data-preview-title]");
-  const detail = preview.querySelector<HTMLElement>("[data-preview-detail]");
-  const note = preview.querySelector<HTMLElement>("[data-preview-note]");
-  const status = preview.querySelector<HTMLElement>("[data-preview-status]");
-  const controls = preview.querySelectorAll<HTMLButtonElement>("[data-preview-step]");
+if (demo) {
+  const heading = demo.querySelector<HTMLElement>("[data-demo-heading]");
+  const status = demo.querySelector<HTMLElement>("[data-demo-status]");
+  const label = demo.querySelector<HTMLElement>("[data-demo-label]");
+  const title = demo.querySelector<HTMLElement>("[data-demo-title]");
+  const body = demo.querySelector<HTMLElement>("[data-demo-body]");
+  const meter = demo.querySelector<HTMLElement>("[data-demo-meter]");
+  const controls = demo.querySelectorAll<HTMLButtonElement>("[data-demo-step]");
+  let activeIndex = 0;
+  let timer: number | undefined;
 
-  controls.forEach((control) => {
-    control.addEventListener("click", () => {
-      const index = Number(control.dataset.previewStep ?? "0");
-      setPreviewCard(index);
-    });
-  });
+  const setDemoState = (index: number) => {
+    const boundedIndex = Math.max(0, Math.min(demoStates.length - 1, index));
+    const state = demoStates[boundedIndex];
+    activeIndex = boundedIndex;
 
-  setPreviewCard(0);
-
-  function setPreviewCard(index: number) {
-    const boundedIndex = Math.max(0, Math.min(previewCards.length - 1, index));
-    const card = previewCards[boundedIndex];
-
-    if (label) label.textContent = card.label;
-    if (title) title.textContent = card.title;
-    if (detail) detail.textContent = card.detail;
-    if (note) note.textContent = card.note;
-    if (status) status.textContent = card.status;
+    if (heading) heading.textContent = state.heading;
+    if (status) status.textContent = state.status;
+    if (label) label.textContent = state.label;
+    if (title) title.textContent = state.title;
+    if (body) body.textContent = state.body;
+    if (meter) meter.style.width = state.meter;
 
     controls.forEach((control) => {
-      const controlIndex = Number(control.dataset.previewStep ?? "0");
+      const controlIndex = Number(control.dataset.demoStep ?? "0");
       const isActive = controlIndex === boundedIndex;
       control.classList.toggle("is-active", isActive);
       control.setAttribute("aria-pressed", String(isActive));
     });
+  };
+
+  controls.forEach((control) => {
+    control.addEventListener("click", () => {
+      window.clearInterval(timer);
+      setDemoState(Number(control.dataset.demoStep ?? "0"));
+    });
+  });
+
+  setDemoState(0);
+
+  if (!reducedMotion) {
+    timer = window.setInterval(() => {
+      setDemoState((activeIndex + 1) % demoStates.length);
+    }, 3400);
   }
 }
+
+const forms = document.querySelectorAll<HTMLFormElement>("[data-waitlist-form]");
 
 forms.forEach((form) => {
   const status = form.querySelector<HTMLElement>("[data-form-status]");

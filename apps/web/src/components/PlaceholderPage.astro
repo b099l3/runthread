@@ -1,0 +1,52 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import WaitlistForm from "./WaitlistForm.astro";
+
+interface Section {
+  title: string;
+  body: string;
+}
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+  eyebrow: string;
+  heading: string;
+  lede: string;
+  sections: Section[];
+  showForm?: boolean;
+}
+
+const { title, description, path, eyebrow, heading, lede, sections, showForm = false } =
+  Astro.props;
+---
+
+<SiteLayout title={title} description={description} path={path}>
+  <section class="page-hero shell">
+    <div class="page-hero__copy" data-reveal>
+      <p class="eyebrow">{eyebrow}</p>
+      <h1>{heading}</h1>
+      <p>{lede}</p>
+    </div>
+    {
+      showForm && (
+        <div class="page-form-panel" data-reveal>
+          <p>Join the private beta list.</p>
+          <WaitlistForm id="page-waitlist" compact />
+        </div>
+      )
+    }
+  </section>
+
+  <section class="placeholder-grid shell">
+    {
+      sections.map((section) => (
+        <article class="placeholder-card" data-reveal>
+          <h2>{section.title}</h2>
+          <p>{section.body}</p>
+        </article>
+      ))
+    }
+  </section>
+</SiteLayout>

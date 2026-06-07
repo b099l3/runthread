@@ -1,248 +1,226 @@
 ---
-import "../styles/global.css";
-
-const siteUrl = import.meta.env.PUBLIC_SITE_URL ?? "https://runthread.app";
-const loopsFormId = import.meta.env.PUBLIC_LOOPS_FORM_ID ?? "";
-const signupAction = loopsFormId
-  ? `https://app.loops.so/api/newsletter-form/${loopsFormId}`
-  : "";
+import FaqAccordion from "../components/FaqAccordion.astro";
+import FeatureModule from "../components/FeatureModule.astro";
+import ProductMockup from "../components/ProductMockup.astro";
+import WaitlistForm from "../components/WaitlistForm.astro";
+import SiteLayout from "../layouts/SiteLayout.astro";
 
 const features = [
   {
-    label: "Plan",
-    title: "A week that starts realistic.",
-    body: "Runthread builds around your current training, available days, and the work that matters most.",
+    eyebrow: "Adaptive plans",
+    title: "A training week with room for real life.",
+    body: "Runthread starts from the sessions that matter, then keeps the rest of the week realistic when work, weather, or fatigue changes the plan.",
+    variant: "plan",
   },
   {
-    label: "Sync",
-    title: "Completed runs come back in.",
-    body: "Strava-backed imports let the app react to what actually happened, not what you remembered to mark done.",
+    eyebrow: "Strava import",
+    title: "Completed runs flow back into the plan.",
+    body: "The beta is built around Strava-backed activity import so training decisions can respond to what actually happened.",
+    variant: "import",
   },
   {
-    label: "Match",
-    title: "Activities meet the right workout.",
-    body: "Date, distance, duration, and type are used to connect a completed run to the plan with clear confidence.",
+    eyebrow: "Workout matching",
+    title: "A run gets linked to the workout it probably was.",
+    body: "Date, distance, duration, and activity type help connect a completed run to the intended session with visible confidence.",
+    variant: "match",
   },
   {
-    label: "Adapt",
-    title: "Changes stay calm.",
-    body: "When a week shifts, Runthread explains what changed and why, without pretending every run needs a dramatic reset.",
+    eyebrow: "Calm adaptation",
+    title: "Plan changes are small and explained.",
+    body: "Runthread avoids dramatic resets. It shows what changed, why it changed, and what to do next.",
+    variant: "adapt",
   },
-];
+  {
+    eyebrow: "Beta privacy",
+    title: "Only the data needed to test the loop.",
+    body: "The first beta stays narrow: email signup, Strava-backed activity details, workout matching, and plan adaptation feedback.",
+    variant: "privacy",
+  },
+] as const;
 
-const previewCards = [
+const flowSteps = [
   {
-    label: "Today",
-    title: "Easy run",
-    detail: "7.2 km / relaxed",
-    note: "Scheduled for recovery after Tuesday's workout.",
-    status: "Ready",
+    number: "01",
+    title: "Set the week",
+    body: "Start with a plan that has structure without pretending every day is perfectly predictable.",
+    meta: "Goal, days, key sessions",
   },
   {
-    label: "Imported",
-    title: "Morning run",
-    detail: "6.8 km / 42 min",
-    note: "Matched to today's easy run with high confidence.",
-    status: "Matched",
+    number: "02",
+    title: "Run normally",
+    body: "Complete your training where you already track it. The app is not another place to manually duplicate every detail.",
+    meta: "Strava-backed import",
   },
   {
-    label: "Updated",
-    title: "Long run adjusted",
-    detail: "15.0 km to 13.5 km",
-    note: "Reduced slightly after a partial completion earlier in the week.",
-    status: "Adapted",
+    number: "03",
+    title: "Match the activity",
+    body: "Runthread compares the completed activity with the planned session and shows the confidence behind the match.",
+    meta: "Date, distance, duration",
+  },
+  {
+    number: "04",
+    title: "Adapt the next session",
+    body: "When the week changes, the next useful adjustment is made without turning the plan into noise.",
+    meta: "Explainable changes",
   },
 ];
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="generator" content={Astro.generator} />
-    <title>Runthread | Adaptive Running Training</title>
-    <meta
-      name="description"
-      content="Runthread is an adaptive running training app that connects planned workouts to real activity data and keeps plan changes calm and explainable."
-    />
-    <link rel="canonical" href={siteUrl} />
-    <meta property="og:title" content="Runthread" />
-    <meta
-      property="og:description"
-      content="Adaptive running plans, Strava-backed activity import, workout matching, and calm training changes."
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content={siteUrl} />
-    <meta name="theme-color" content="#f6f2e8" />
-  </head>
-  <body>
-    <header class="site-header" aria-label="Runthread">
-      <a class="brand" href="/" aria-label="Runthread home">
-        <span class="brand-mark" aria-hidden="true"></span>
-        Runthread
-      </a>
-      <nav aria-label="Primary">
-        <a href="#features">Features</a>
-        <a href="#flow">How it works</a>
-        <a href="#beta">Beta</a>
-      </nav>
-    </header>
+<SiteLayout>
+  <section class="hero shell">
+    <div class="hero-copy" data-reveal>
+      <p class="eyebrow">Private beta</p>
+      <h1>Adaptive running plans, explained.</h1>
+      <p class="lede">
+        Runthread connects planned workouts to the runs you actually complete,
+        then adjusts the week with calm, explainable changes.
+      </p>
+      <div id="waitlist" class="hero-form">
+        <WaitlistForm id="hero-waitlist" />
+        <p>
+          Early access is invite-only while the plan, import, match, and adapt
+          loop is tested with real runners.
+        </p>
+      </div>
+    </div>
+    <div class="hero-product" data-reveal>
+      <ProductMockup />
+    </div>
+  </section>
 
-    <main>
-      <section class="hero section-band">
-        <div class="hero-copy" data-reveal>
-          <p class="eyebrow">Private beta</p>
-          <h1>Running plans that adjust quietly.</h1>
-          <p class="lede">
-            Runthread connects your weekly plan to the runs you actually complete,
-            then makes small, explainable changes when training does not go exactly
-            to plan.
-          </p>
+  <section class="logo-strip shell" aria-label="Beta focus" data-reveal>
+    <span>Adaptive plans</span>
+    <span>Strava-backed import</span>
+    <span>Workout matching</span>
+    <span>Calm plan changes</span>
+  </section>
 
-          <form
-            class="signup-form"
-            data-waitlist-form
-            action={signupAction}
-            method="post"
-            aria-describedby="signup-status signup-note"
-          >
-            <label class="sr-only" for="hero-email">Email address</label>
-            <input
-              id="hero-email"
-              type="email"
-              name="email"
-              autocomplete="email"
-              inputmode="email"
-              placeholder="you@example.com"
-              required
-            />
-            <input type="hidden" name="source" value="runthread.app landing_page" />
-            <input type="hidden" name="userGroup" value="Beta waitlist" />
-            <input type="hidden" name="notes" value="Runthread beta waitlist signup" />
-            <button type="submit">Join beta waitlist</button>
-            <p class="form-status" id="signup-status" data-form-status role="status"></p>
-          </form>
-          <p class="form-note" id="signup-note">
-            Enter your email to join the private beta waitlist. Early access will
-            be invite-only while Strava import, workout matching, and adaptation
-            are validated.
-          </p>
-        </div>
-
-        <div class="preview" data-reveal data-preview>
-          <div class="preview-card">
-            <div class="preview-top">
-              <span data-preview-label>{previewCards[0].label}</span>
-              <strong data-preview-status>{previewCards[0].status}</strong>
+  <section class="story-section shell" id="how-it-works">
+    <div class="section-intro" data-reveal>
+      <p class="eyebrow">How it works</p>
+      <h2>A clearer loop for training weeks that change.</h2>
+    </div>
+    <div class="flow-grid">
+      {
+        flowSteps.map((step) => (
+          <article class="flow-card" data-reveal>
+            <span>{step.number}</span>
+            <div class="flow-visual" aria-hidden="true">
+              <i></i>
+              <i></i>
+              <i></i>
             </div>
-            <h2 data-preview-title>{previewCards[0].title}</h2>
-            <p data-preview-detail>{previewCards[0].detail}</p>
-            <div class="preview-note">
-              <span>Runthread</span>
-              <p data-preview-note>{previewCards[0].note}</p>
-            </div>
-          </div>
-          <div class="preview-controls" aria-label="Preview Runthread states">
-            {
-              previewCards.map((card, index) => (
-                <button
-                  class={index === 0 ? "is-active" : ""}
-                  type="button"
-                  data-preview-step={String(index)}
-                  aria-pressed={index === 0 ? "true" : "false"}
-                >
-                  {card.status}
-                </button>
-              ))
-            }
-          </div>
-        </div>
-      </section>
+            <h3>{step.title}</h3>
+            <p>{step.body}</p>
+            <strong>{step.meta}</strong>
+          </article>
+        ))
+      }
+    </div>
+  </section>
 
-      <section class="section-band feature-band" id="features">
-        <div class="section-heading" data-reveal>
-          <p class="eyebrow">What it does</p>
-          <h2>A simpler loop for adaptive training.</h2>
-        </div>
-        <div class="feature-grid">
-          {
-            features.map((feature) => (
-              <article class="feature-card" data-reveal>
-                <p>{feature.label}</p>
-                <h3>{feature.title}</h3>
-                <span>{feature.body}</span>
-              </article>
-            ))
-          }
-        </div>
-      </section>
+  <section class="feature-section shell" id="features">
+    <div class="section-intro section-intro--split" data-reveal>
+      <div>
+        <p class="eyebrow">Feature showcase</p>
+        <h2>Built around the moments where training plans usually break.</h2>
+      </div>
+      <p>
+        The first version is intentionally focused. The goal is to make the
+        adaptive loop useful before adding more dashboards, badges, or noise.
+      </p>
+    </div>
+    <div class="feature-modules">
+      {features.map((feature) => <FeatureModule {...feature} />)}
+    </div>
+  </section>
 
-      <section class="section-band flow-band" id="flow">
-        <div class="section-heading compact" data-reveal>
-          <p class="eyebrow">Beta focus</p>
-          <h2>Not a louder running app.</h2>
-        </div>
-        <div class="statement-grid">
-          <p data-reveal>
-            The beta is intentionally narrow: weekly plan viewing, Strava-backed
-            activity import, workout matching, and deterministic adaptation.
-          </p>
-          <p data-reveal>
-            No streak pressure, no maximalist dashboard, and no mysterious training
-            decisions. Just the next useful adjustment.
-          </p>
-        </div>
-      </section>
+  <section class="product-details shell">
+    <div class="detail-panel detail-panel--wide" data-reveal>
+      <div>
+        <p class="eyebrow">Training timeline</p>
+        <h2>The week is visible, not buried.</h2>
+        <p>
+          See what is planned, what has been completed, and what changed after an
+          imported activity. The beta keeps the core training story on one screen.
+        </p>
+      </div>
+      <div class="timeline-preview" aria-hidden="true">
+        <span class="done">Tue intervals matched</span>
+        <span class="done">Wed easy imported</span>
+        <span>Fri tempo ready</span>
+        <span class="changed">Sun long run reduced</span>
+      </div>
+    </div>
 
-      <section class="section-band beta-band" id="beta">
-        <div class="beta-panel" data-reveal>
-          <div>
-            <p class="eyebrow">Beta access</p>
-            <h2>One beta waitlist, two places to join.</h2>
-            <p>
-              This form submits to the same private beta waitlist as the signup
-              above, for the first Runthread builds.
-            </p>
-          </div>
-          <form
-            class="signup-form compact-form"
-            data-waitlist-form
-            action={signupAction}
-            method="post"
-            aria-describedby="footer-signup-status"
-          >
-            <label class="sr-only" for="footer-email">Email address</label>
-            <input
-              id="footer-email"
-              type="email"
-              name="email"
-              autocomplete="email"
-              inputmode="email"
-              placeholder="you@example.com"
-              required
-            />
-            <input type="hidden" name="source" value="runthread.app landing_page" />
-            <input type="hidden" name="userGroup" value="Beta waitlist" />
-            <input type="hidden" name="notes" value="Runthread beta waitlist signup" />
-            <button type="submit">Join beta waitlist</button>
-            <p
-              class="form-status"
-              id="footer-signup-status"
-              data-form-status
-              role="status"
-            >
-            </p>
-          </form>
-        </div>
-      </section>
-    </main>
+    <div class="detail-panel" data-reveal>
+      <p class="eyebrow">Import panel</p>
+      <h3>Morning run</h3>
+      <dl>
+        <div><dt>Distance</dt><dd>6.8 km</dd></div>
+        <div><dt>Duration</dt><dd>42 min</dd></div>
+        <div><dt>Source</dt><dd>Strava</dd></div>
+      </dl>
+    </div>
 
-    <footer class="site-footer">
-      <span>Runthread</span>
-      <span>Adaptive running training for private beta.</span>
-    </footer>
+    <div class="detail-panel" data-reveal>
+      <p class="eyebrow">Match confidence</p>
+      <h3>High confidence</h3>
+      <div class="confidence-ring" aria-hidden="true">92%</div>
+      <p>Matched to Wednesday easy run by date, duration, and effort range.</p>
+    </div>
 
-    <script src="../scripts/landing.ts"></script>
-  </body>
-</html>
+    <div class="detail-panel detail-panel--note" data-reveal>
+      <p class="eyebrow">Adaptation note</p>
+      <h3>Long run adjusted</h3>
+      <p>
+        Reduced Sunday by 1.5 km after a partial completion earlier in the week.
+        Friday remains unchanged.
+      </p>
+    </div>
+  </section>
+
+  <section class="trust-section shell">
+    <div class="founder-note" data-reveal>
+      <p class="eyebrow">Founder note</p>
+      <h2>Runthread is being built for runners who want less mystery.</h2>
+      <p>
+        The beta is about earning trust in a small loop: build a useful week,
+        import completed runs, match them correctly, and explain any change. If
+        that loop is not right, the rest of the product does not matter yet.
+      </p>
+    </div>
+    <div class="trust-card" data-reveal>
+      <span>Beta posture</span>
+      <strong>Focused, not maximalist.</strong>
+      <p>
+        Email capture uses Loops. Activity import is scoped to the training data
+        needed to validate matching and adaptation before wider beta access.
+      </p>
+      <a href="/privacy">Read the privacy placeholder</a>
+    </div>
+  </section>
+
+  <section class="faq-section shell">
+    <div class="section-intro" data-reveal>
+      <p class="eyebrow">FAQ</p>
+      <h2>Useful answers before the beta opens.</h2>
+    </div>
+    <FaqAccordion />
+  </section>
+
+  <section class="final-cta shell">
+    <div data-reveal>
+      <p class="eyebrow">Beta access</p>
+      <h2>Join the first Runthread beta list.</h2>
+      <p>
+        The first invites will go to runners who are happy to test adaptive plan
+        changes and give direct feedback.
+      </p>
+    </div>
+    <div class="final-cta__form" data-reveal>
+      <WaitlistForm id="final-waitlist" compact buttonLabel="Request access" />
+      <a href="/beta">See beta details</a>
+    </div>
+  </section>
+</SiteLayout>

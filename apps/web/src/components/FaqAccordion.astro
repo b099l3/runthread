@@ -1,0 +1,45 @@
+---
+const faqs = [
+  {
+    question: "How do I get beta access?",
+    answer:
+      "Join the waitlist and beta invites will be sent in small batches as the core training loop becomes ready to test.",
+  },
+  {
+    question: "Do I need Strava?",
+    answer:
+      "The first beta is designed around Strava-backed activity import, so Strava will be the preferred way to test matching and adaptation.",
+  },
+  {
+    question: "What data will Runthread import?",
+    answer:
+      "The beta focuses on activity details needed to match completed runs to planned workouts, such as date, distance, duration, and activity type.",
+  },
+  {
+    question: "Will there be pricing?",
+    answer:
+      "Pricing is not set yet. The first goal is validating whether the plan, import, match, and adapt loop is useful.",
+  },
+  {
+    question: "Which platforms will be supported?",
+    answer:
+      "The mobile app is the main product surface. The landing page is static and only handles beta signup for now.",
+  },
+  {
+    question: "How often will invites go out?",
+    answer:
+      "Invites will be gradual so feedback can be handled properly and plan changes can be checked before widening access.",
+  },
+];
+---
+
+<div class="faq-list">
+  {
+    faqs.map((faq, index) => (
+      <details class="faq-item" data-reveal open={index === 0}>
+        <summary>{faq.question}</summary>
+        <p>{faq.answer}</p>
+      </details>
+    ))
+  }
+</div>

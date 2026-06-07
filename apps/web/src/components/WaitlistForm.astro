@@ -1,0 +1,37 @@
+---
+interface Props {
+  id: string;
+  compact?: boolean;
+  buttonLabel?: string;
+}
+
+const { id, compact = false, buttonLabel = "Join the beta" } = Astro.props;
+const loopsFormId = import.meta.env.PUBLIC_LOOPS_FORM_ID ?? "";
+const signupAction = loopsFormId
+  ? `https://app.loops.so/api/newsletter-form/${loopsFormId}`
+  : "";
+---
+
+<form
+  class:list={["waitlist-form", { "waitlist-form--compact": compact }]}
+  data-waitlist-form
+  action={signupAction}
+  method="post"
+  aria-describedby={`${id}-status`}
+>
+  <label class="sr-only" for={`${id}-email`}>Email address</label>
+  <input
+    id={`${id}-email`}
+    type="email"
+    name="email"
+    autocomplete="email"
+    inputmode="email"
+    placeholder="you@example.com"
+    required
+  />
+  <input type="hidden" name="source" value="runthread.app landing_page" />
+  <input type="hidden" name="userGroup" value="Beta waitlist" />
+  <input type="hidden" name="notes" value="Runthread beta waitlist signup" />
+  <button type="submit">{buttonLabel}</button>
+  <p class="form-status" id={`${id}-status`} data-form-status role="status"></p>
+</form>

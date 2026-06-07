@@ -1,0 +1,62 @@
+---
+interface Props {
+  eyebrow: string;
+  title: string;
+  body: string;
+  variant?: "plan" | "import" | "match" | "adapt" | "privacy";
+}
+
+const { eyebrow, title, body, variant = "plan" } = Astro.props;
+---
+
+<article class:list={["feature-module", `feature-module--${variant}`]} data-reveal>
+  <div>
+    <p class="eyebrow">{eyebrow}</p>
+    <h3>{title}</h3>
+    <p>{body}</p>
+  </div>
+  <div class="module-visual" aria-hidden="true">
+    {
+      variant === "plan" && (
+        <>
+          <span class="visual-bar wide"></span>
+          <span class="visual-bar"></span>
+          <span class="visual-pill">Base week</span>
+        </>
+      )
+    }
+    {
+      variant === "import" && (
+        <>
+          <span class="visual-dot"></span>
+          <span class="visual-line"></span>
+          <span class="visual-pill">Strava import</span>
+        </>
+      )
+    }
+    {
+      variant === "match" && (
+        <>
+          <span class="visual-score">92%</span>
+          <span class="visual-pill">High confidence</span>
+        </>
+      )
+    }
+    {
+      variant === "adapt" && (
+        <>
+          <span class="visual-shift"></span>
+          <span class="visual-pill">Small change</span>
+        </>
+      )
+    }
+    {
+      variant === "privacy" && (
+        <>
+          <span class="visual-lock"></span>
+          <span class="visual-pill">Beta posture</span>
+        </>
+      )
+    }
+  </div>
+</article>
