@@ -1,4 +1,7 @@
 ---
+import "@fontsource-variable/inter";
+import "@fontsource-variable/fraunces/opsz.css";
+import "@fontsource-variable/fraunces/opsz-italic.css";
 import "../styles/global.css";
 
 interface Props {
@@ -31,9 +34,10 @@ const canonicalUrl = new URL(path, siteUrl).toString();
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonicalUrl} />
     <meta name="theme-color" content="#f5f1e7" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body>
-    <header class="site-header" aria-label="Runthread">
+    <header class="site-header" aria-label="Runthread" data-site-header>
       <a class="brand" href="/" aria-label="Runthread home">
         <span class="brand-mark" aria-hidden="true"></span>
         Runthread
@@ -69,5 +73,6 @@ const canonicalUrl = new URL(path, siteUrl).toString();
     </footer>
 
     <script src="../scripts/landing.ts"></script>
+    <script src="../scripts/scroll.ts"></script>
   </body>
 </html>

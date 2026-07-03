@@ -1,0 +1,13 @@
+---
+// Full-page decorative thread layer. The actual path geometry is generated at
+// runtime in scroll.ts from elements marked with [data-thread-anchor], so it
+// stays aligned with real content positions across breakpoints.
+---
+
+<div class="thread-layer" aria-hidden="true" data-thread-layer>
+  <svg data-thread-svg preserveAspectRatio="none" fill="none">
+    <path class="thread-shadow" data-thread-shadow d=""></path>
+    <path class="thread-line" data-thread-line d=""></path>
+  </svg>
+  <span class="thread-needle" data-thread-needle></span>
+</div>

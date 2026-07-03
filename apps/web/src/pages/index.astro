@@ -2,38 +2,39 @@
 import FaqAccordion from "../components/FaqAccordion.astro";
 import FeatureModule from "../components/FeatureModule.astro";
 import ProductMockup from "../components/ProductMockup.astro";
+import ThreadPath from "../components/ThreadPath.astro";
 import WaitlistForm from "../components/WaitlistForm.astro";
 import SiteLayout from "../layouts/SiteLayout.astro";
 
 const features = [
   {
     eyebrow: "Adaptive plans",
-    title: "A training week with room for real life.",
-    body: "Runthread starts from the sessions that matter, then keeps the rest of the week realistic when work, weather, or fatigue changes the plan.",
+    title: "A week built for your real life.",
+    body: "Runthread plans around the sessions that move you forward, then flexes the rest when work, weather, or tired legs interfere.",
     variant: "plan",
   },
   {
     eyebrow: "Strava import",
-    title: "Completed runs flow back into the plan.",
-    body: "The beta is built around Strava-backed activity import so training decisions can respond to what actually happened.",
+    title: "Your runs flow in on their own.",
+    body: "Connect Strava once. Completed activities are imported automatically, so the plan responds to what actually happened — not what you remembered to log.",
     variant: "import",
   },
   {
     eyebrow: "Workout matching",
-    title: "A run gets linked to the workout it probably was.",
-    body: "Date, distance, duration, and activity type help connect a completed run to the intended session with visible confidence.",
+    title: "It knows which workout that was.",
+    body: "Date, distance, duration, and activity type link each run to its planned session — with the match confidence in plain sight, never hidden.",
     variant: "match",
   },
   {
     eyebrow: "Calm adaptation",
-    title: "Plan changes are small and explained.",
-    body: "Runthread avoids dramatic resets. It shows what changed, why it changed, and what to do next.",
+    title: "Changes are small, and always explained.",
+    body: "No dramatic resets. When the plan shifts, you see exactly what changed, why it changed, and what to do next.",
     variant: "adapt",
   },
   {
     eyebrow: "Beta privacy",
-    title: "Only the data needed to test the loop.",
-    body: "The first beta stays narrow: email signup, Strava-backed activity details, workout matching, and plan adaptation feedback.",
+    title: "Only what the loop needs.",
+    body: "The first beta collects an email, Strava activity basics, and your feedback on plan changes. Nothing more.",
     variant: "privacy",
   },
 ] as const;
@@ -42,40 +43,54 @@ const flowSteps = [
   {
     number: "01",
     title: "Set the week",
-    body: "Start with a plan that has structure without pretending every day is perfectly predictable.",
+    body: "Tell Runthread your goal and your available days. It builds a week with structure where it matters and slack where it doesn't.",
     meta: "Goal, days, key sessions",
   },
   {
     number: "02",
-    title: "Run normally",
-    body: "Complete your training where you already track it. The app is not another place to manually duplicate every detail.",
-    meta: "Strava-backed import",
+    title: "Just run",
+    body: "Head out like you always do. Your watch and Strava already record everything Runthread needs — there's nothing to log twice.",
+    meta: "No manual logging",
   },
   {
     number: "03",
-    title: "Match the activity",
-    body: "Runthread compares the completed activity with the planned session and shows the confidence behind the match.",
-    meta: "Date, distance, duration",
+    title: "It flows back in",
+    body: "The activity is imported and matched to the session it probably was, with the confidence behind the match shown to you.",
+    meta: "Date · distance · duration",
   },
   {
     number: "04",
-    title: "Adapt the next session",
-    body: "When the week changes, the next useful adjustment is made without turning the plan into noise.",
-    meta: "Explainable changes",
+    title: "One small change, explained",
+    body: "If the week needs to shift, one session is adjusted and you're told exactly why. No resets. No guilt. No noise.",
+    meta: "Calm adaptation",
   },
+];
+
+const marqueeWords = [
+  "Adaptive plans",
+  "Strava import",
+  "Workout matching",
+  "Explained changes",
+  "No resets",
+  "One thread",
 ];
 ---
 
 <SiteLayout>
+  <ThreadPath />
+
   <section class="hero shell">
-    <div class="hero-copy" data-reveal>
-      <p class="eyebrow">Private beta</p>
-      <h1>Adaptive running plans, explained.</h1>
-      <p class="lede">
-        Runthread connects planned workouts to the runs you actually complete,
-        then adjusts the week with calm, explainable changes.
+    <div class="hero-copy">
+      <p class="eyebrow" data-hero-eyebrow>Private beta · Strava-first</p>
+      <h1 data-hero-title>
+        Training that <em class="accent">holds together</em>.
+      </h1>
+      <p class="lede" data-hero-lede>
+        Most plans assume a perfect week. Runthread assumes a real one — it
+        imports the runs you actually did, matches them to the plan, and makes
+        one small, explained change instead of handing you guilt.
       </p>
-      <div id="waitlist" class="hero-form">
+      <div id="waitlist" class="hero-form" data-hero-form>
         <WaitlistForm id="hero-waitlist" />
         <p>
           Early access is invite-only while the plan, import, match, and adapt
@@ -83,27 +98,48 @@ const flowSteps = [
         </p>
       </div>
     </div>
-    <div class="hero-product" data-reveal>
+    <div class="hero-product" data-hero-product data-thread-anchor="right">
       <ProductMockup />
     </div>
   </section>
 
-  <section class="logo-strip shell" aria-label="Beta focus" data-reveal>
-    <span>Adaptive plans</span>
-    <span>Strava-backed import</span>
-    <span>Workout matching</span>
-    <span>Calm plan changes</span>
+  <section class="thread-statement shell" aria-label="Why Runthread">
+    <p class="statement-line" data-statement data-thread-anchor="left">
+      Every run you do is a <em class="accent">stitch</em>.
+      <span class="statement-second">Runthread keeps them on one thread.</span>
+    </p>
   </section>
 
-  <section class="story-section shell" id="how-it-works">
+  <div class="marquee" aria-hidden="true" data-marquee>
+    <div class="marquee-track" data-marquee-track>
+      {
+        [0, 1].map(() =>
+          marqueeWords.map((word) => (
+            <span class="marquee-item">
+              {word}
+              <i class="marquee-dot"></i>
+            </span>
+          )),
+        )
+      }
+    </div>
+  </div>
+
+  <section class="story-section shell" id="how-it-works" data-hiw>
     <div class="section-intro" data-reveal>
       <p class="eyebrow">How it works</p>
-      <h2>A clearer loop for training weeks that change.</h2>
+      <h2 data-thread-anchor="center">
+        One loop, from plan to <em class="accent">adapted</em> plan.
+      </h2>
     </div>
-    <div class="flow-grid">
+    <div class="flow-grid" data-hiw-track>
       {
-        flowSteps.map((step) => (
-          <article class="flow-card" data-reveal>
+        flowSteps.map((step, index) => (
+          <article
+            class="flow-card"
+            data-flow-card
+            data-flow-index={String(index)}
+          >
             <span>{step.number}</span>
             <div class="flow-visual" aria-hidden="true">
               <i></i>
@@ -123,11 +159,13 @@ const flowSteps = [
     <div class="section-intro section-intro--split" data-reveal>
       <div>
         <p class="eyebrow">Feature showcase</p>
-        <h2>Built around the moments where training plans usually break.</h2>
+        <h2 data-thread-anchor="left">
+          Built for the moments where plans usually <em class="accent">break</em>.
+        </h2>
       </div>
       <p>
-        The first version is intentionally focused. The goal is to make the
-        adaptive loop useful before adding more dashboards, badges, or noise.
+        The first version is deliberately focused: make the adaptive loop
+        genuinely useful before adding dashboards, badges, or noise.
       </p>
     </div>
     <div class="feature-modules">
@@ -136,16 +174,16 @@ const flowSteps = [
   </section>
 
   <section class="product-details shell">
-    <div class="detail-panel detail-panel--wide" data-reveal>
+    <div class="detail-panel detail-panel--wide" data-reveal data-parallax="0.06">
       <div>
         <p class="eyebrow">Training timeline</p>
-        <h2>The week is visible, not buried.</h2>
+        <h2 data-thread-anchor="right">The week is visible, not buried.</h2>
         <p>
-          See what is planned, what has been completed, and what changed after an
-          imported activity. The beta keeps the core training story on one screen.
+          What's planned, what came back from Strava, and what changed — the
+          whole training story stays on one screen, in order, in plain words.
         </p>
       </div>
-      <div class="timeline-preview" aria-hidden="true">
+      <div class="timeline-preview" aria-hidden="true" data-timeline>
         <span class="done">Tue intervals matched</span>
         <span class="done">Wed easy imported</span>
         <span>Fri tempo ready</span>
@@ -153,7 +191,7 @@ const flowSteps = [
       </div>
     </div>
 
-    <div class="detail-panel" data-reveal>
+    <div class="detail-panel" data-reveal data-parallax="-0.05">
       <p class="eyebrow">Import panel</p>
       <h3>Morning run</h3>
       <dl>
@@ -163,59 +201,64 @@ const flowSteps = [
       </dl>
     </div>
 
-    <div class="detail-panel" data-reveal>
+    <div class="detail-panel" data-reveal data-parallax="0.04">
       <p class="eyebrow">Match confidence</p>
       <h3>High confidence</h3>
-      <div class="confidence-ring" aria-hidden="true">92%</div>
-      <p>Matched to Wednesday easy run by date, duration, and effort range.</p>
+      <div class="confidence-ring" data-ring data-ring-value="92" aria-hidden="true">
+        <span data-ring-count>0</span>%
+      </div>
+      <p>Matched to Wednesday's easy run by date, duration, and effort range.</p>
     </div>
 
-    <div class="detail-panel detail-panel--note" data-reveal>
+    <div class="detail-panel detail-panel--note" data-reveal data-parallax="-0.03">
       <p class="eyebrow">Adaptation note</p>
       <h3>Long run adjusted</h3>
       <p>
-        Reduced Sunday by 1.5 km after a partial completion earlier in the week.
-        Friday remains unchanged.
+        Sunday reduced by 1.5 km after a partial completion earlier in the
+        week. Friday stays exactly as planned.
       </p>
     </div>
   </section>
 
-  <section class="trust-section shell">
-    <div class="founder-note" data-reveal>
-      <p class="eyebrow">Founder note</p>
-      <h2>Runthread is being built for runners who want less mystery.</h2>
-      <p>
-        The beta is about earning trust in a small loop: build a useful week,
-        import completed runs, match them correctly, and explain any change. If
-        that loop is not right, the rest of the product does not matter yet.
-      </p>
-    </div>
-    <div class="trust-card" data-reveal>
-      <span>Beta posture</span>
-      <strong>Focused, not maximalist.</strong>
-      <p>
-        Email capture uses Loops. Activity import is scoped to the training data
-        needed to validate matching and adaptation before wider beta access.
-      </p>
-      <a href="/privacy">Read the privacy placeholder</a>
-    </div>
-  </section>
+  <div class="band" data-band>
+    <section class="trust-section shell">
+      <div class="founder-note" data-reveal>
+        <p class="eyebrow">Founder note</p>
+        <h2 data-thread-anchor="left">Built for runners who want less mystery.</h2>
+        <p>
+          Runthread exists because training plans tend to break the moment life
+          shows up. The beta is about earning trust in one small loop: build a
+          useful week, import completed runs, match them correctly, and explain
+          every change. If that loop isn't right, nothing else matters yet.
+        </p>
+      </div>
+      <div class="trust-card" data-reveal>
+        <span>Beta posture</span>
+        <strong>Focused, not maximalist.</strong>
+        <p>
+          Email capture uses Loops. Activity import is scoped to the training
+          data needed to validate matching and adaptation before wider access.
+        </p>
+        <a href="/privacy">Read the privacy placeholder</a>
+      </div>
+    </section>
+  </div>
 
   <section class="faq-section shell">
     <div class="section-intro" data-reveal>
       <p class="eyebrow">FAQ</p>
-      <h2>Useful answers before the beta opens.</h2>
+      <h2 data-thread-anchor="center">Straight answers before the beta opens.</h2>
     </div>
     <FaqAccordion />
   </section>
 
-  <section class="final-cta shell">
+  <section class="final-cta shell" data-thread-anchor="tie">
     <div data-reveal>
       <p class="eyebrow">Beta access</p>
-      <h2>Join the first Runthread beta list.</h2>
+      <h2>Pick up the <em class="accent">thread</em>.</h2>
       <p>
-        The first invites will go to runners who are happy to test adaptive plan
-        changes and give direct feedback.
+        First invites go to runners who are happy to test adaptive plan changes
+        and say what felt right — and what didn't.
       </p>
     </div>
     <div class="final-cta__form" data-reveal>
